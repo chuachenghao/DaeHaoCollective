@@ -1,0 +1,70 @@
+{% extends 'marketplace/base.html' %}
+{% block title %}Review your purchase · {{ site_name }}{% endblock %}
+{% block content %}
+    <section class="container page">
+        <p class="eyebrow">BAG / CHECKOUT</p>
+        <h1>Review your demo purchase</h1>
+        <div class="two-column purchase-layout">
+            <div>
+                <section class="card">
+                    <h2>1 &nbsp; Delivery address</h2>
+                    {% if addresses %}
+                        <form method="get" class="form">
+                            <label for="address">Choose your delivery address</label>
+                            <select name="address" id="address">
+                                {% for address in addresses %}
+                                    <option value="{{ address.pk }}" {% if address.pk == selected_address.pk %}selected{% endif %}>{{ address }}</option>
+                                {% endfor %}
+                            </select>
+                            <button class="button button-secondary">Use this address and refresh review</button>
+                        </form>
+                    {% endif %}
+                    {% if selected_address %}
+                        <div class="address-snapshot">
+                            <strong>{{ selected_address.recipient_name }}</strong>
+                            <p>{{ selected_address.address_line }}<br>Singapore {{ selected_address.postal_code }}<br>{{ selected_address.phone_number }}</p>
+                            <a href="{% url 'address_edit' selected_address.pk %}?checkout=1">Edit selected address</a>
+                        </div>
+                    {% else %}
+                        <p>Save a delivery address before placing your order.</p>
+                    {% endif %}
+                    <p><a href="{% url 'address_create' %}?checkout=1">+ Add another address</a></p>
+                </section>
+                <section class="card">
+                    <h2>2 &nbsp; Your retailer groups</h2>
+                    {% for group in groups %}
+                        <section class="checkout-group">
+                            <h3>{{ group.seller.store_name }}</h3>
+                            {% for item in group.items %}
+                                <p>{{ item.quantity }} × {{ item.variant.product.name }}<br><span class="muted">{{ item.variant.colour }}
+                                / {{ item.variant.size }} · SGD {{ item.variant.product.price }} each</span><br>SGD
+                                {{ item.subtotal|floatformat:2 }}</p>
+                            {% endfor %}
+                            <p><strong>Retailer subtotal: SGD {{ group.subtotal|floatformat:2 }}</strong></p>
+                        </section>
+                    {% endfor %}
+                </section>
+            </div>
+            <aside class="card order-summary">
+                <h2>Demo checkout</h2>
+                <p>No real payment is taken. Delivery is included in this demonstration.</p>
+                <p>{{ units }} units / {{ groups|length }} retailers</p>
+                <dl>
+                    <dt>Total</dt>
+                    <dd><strong>SGD {{ total|floatformat:2 }}</strong></dd>
+                </dl>
+                {% if selected_address %}
+                    <form method="post">
+                        {% csrf_token %}
+                        <input type="hidden" name="checkout_token" value="{{ checkout_token }}">
+                        <button class="button" type="submit" name="action" value="place">Place demo order →</button>
+                        <button class="button button-secondary" type="submit" name="action" value="decline">Simulate
+                        declined payment</button>
+                    </form>
+                {% endif %}
+                <p>Placement rechecks stock, prices and delivery details. Any change requires a fresh review.</p>
+                <a href="{% url 'cart' %}">Return to bag →</a>
+            </aside>
+        </div>
+    </section>
+{% endblock %}

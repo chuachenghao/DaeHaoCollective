@@ -1,0 +1,38 @@
+{% extends "marketplace/base.html" %}
+{% block content %}
+<div class="container page management-shell">
+  <aside class="management-sidebar" aria-label="Workspace navigation">
+    <p class="eyebrow">{{ site_name }} / {{ workspace_title }}</p>
+    <nav class="management-nav">
+      {% if is_operations %}
+        <a href="{% url 'operations_dashboard' %}">Overview</a>
+        <a href="{% url 'operations_sellers' %}">Retailers</a>
+        <a href="{% url 'operations_products' %}">Products</a>
+        <a href="{% url 'operations_inventory' %}">Inventory</a>
+        <a href="{% url 'operations_categories' %}">Categories</a>
+        <a href="{% url 'operations_styles' %}">Styles</a>
+        <a href="{% url 'operations_customers' %}">Customers</a>
+        <a href="{% url 'operations_orders' %}">Orders</a>
+        <a href="{% url 'operations_commissions' %}">Commissions</a>
+        <a href="{% url 'operations_model' %}">Model status</a>
+      {% else %}
+        {% if user.seller.can_trade %}
+          <a href="{% url 'seller_dashboard' %}">Overview</a>
+          <a href="{% url 'seller_profile' %}">Store profile</a>
+          <a href="{% url 'seller_products' %}">Products</a>
+          <a href="{% url 'seller_inventory' %}">Inventory</a>
+        {% else %}
+          <a href="{% url 'seller_status' %}">Application status</a>
+        {% endif %}
+        <a href="{% url 'seller_orders' %}">Orders</a>
+        <a href="{% url 'seller_sales' %}">Sales</a>
+      {% endif %}
+      <a href="{% url 'account' %}">Account details</a>
+      <a href="{% url 'home' %}">Visit storefront ↗</a>
+    </nav>
+  </aside>
+  <div class="management-content">
+    {% block workspace_content %}{% endblock %}
+  </div>
+</div>
+{% endblock %}

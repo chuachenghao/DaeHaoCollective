@@ -1,0 +1,113 @@
+{% load static %}
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="description" content="Discover considered clothing from independent labels. {{ site_name }} is an IS2108 demonstration marketplace.">
+        <title>{% block title %}{{ site_name }} — Independent labels. One considered wardrobe.{% endblock %}</title>
+        <link rel="stylesheet" href="{% static 'marketplace/css/site.css' %}">
+        {% block extra_head %}
+        {% endblock %}
+    </head>
+    <body>
+        <a class="skip-link" href="#main-content">Skip to content</a>
+        <div class="announcement">
+            Independent labels. One considered wardrobe.
+        </div>
+        <header class="site-header">
+            <div class="header-main container">
+                <a class="header-help" href="{% url 'help' %}">Help</a>
+                <a class="wordmark" href="{% url 'home' %}" aria-label="{{ site_name }} home">{{ site_name }}</a>
+                <div class="header-account">
+                    {% if user.is_authenticated %}
+                        <a href="{% url 'account' %}">My account</a>
+                    {% else %}
+                        <a href="{% url 'login' %}">Sign in</a>
+                    {% endif %}
+                    <a href="{% url 'cart' %}">Bag ({{ bag_count|default:0 }})</a>
+                </div>
+            </div>
+            {% if user.is_authenticated %}
+                <div class="session-bar container">
+                    <span>Signed in as {{ user.username }}</span>
+                    {% if user.role == 'SELLER' %}
+                        <a href="{% url 'seller_dashboard' %}">Seller workspace →</a>
+                    {% elif user.role == 'ADMIN' %}
+                        <a href="{% url 'operations_dashboard' %}">Operations workspace →</a>
+                    {% endif %}
+                    <form action="{% url 'logout' %}" method="post">
+                        {% csrf_token %}
+                        <button type="submit">Sign out</button>
+                    </form>
+                </div>
+            {% endif %}
+            <nav class="desktop-nav container" aria-label="Main navigation">
+                <div class="nav-links">
+                    <a class="{% if active_nav == 'shop' %}active{% endif %}" href="{% url 'catalogue' %}">Shop</a>
+                    <a class="{% if active_nav == 'brands' %}active{% endif %}" href="{% url 'brands' %}">Brands</a>
+                    <a class="{% if active_nav == 'for_you' %}active{% endif %}" href="{% url 'for_you' %}">For You</a>
+                    <a class="{% if active_nav == 'about' %}active{% endif %}" href="{% url 'about' %}">About</a>
+                </div>
+                <a class="search-link" href="{% url 'catalogue' %}#catalogue-search">Search
+                <span aria-hidden="true">⌕</span></a>
+            </nav>
+            <details class="mobile-menu">
+                <summary>Menu <span aria-hidden="true">+</span></summary>
+                <nav aria-label="Mobile navigation">
+                    <a href="{% url 'catalogue' %}">Shop all clothing</a>
+                    <a href="{% url 'brands' %}">Independent brands</a>
+                    <a href="{% url 'for_you' %}">For You</a>
+                    <a href="{% url 'account' %}">My account</a>
+                    <a href="{% url 'about' %}">About {{ site_name }}</a>
+                    <a href="{% url 'help' %}">Help & orders</a>
+                    <form action="{% url 'catalogue' %}" method="get" class="search-form">
+                        <label class="sr-only" for="mobile-search">Search clothing</label>
+                        <input id="mobile-search" type="search" name="q" placeholder="Search clothing and labels">
+                        <button type="submit">Search</button>
+                    </form>
+                </nav>
+            </details>
+        </header>
+        {% if messages %}
+            <div class="container messages" aria-live="polite">
+                {% for message in messages %}
+                    <div class="notice {{ message.tags }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+        <main id="main-content" tabindex="-1">
+            {% block content %}
+            {% endblock %}
+        </main>
+        <footer class="site-footer">
+            <div class="container footer-main">
+                <div>
+                    <a class="footer-wordmark" href="{% url 'home' %}">{{ site_name }}</a>
+                    <p>Clothing with a point of view.<br>Independent labels, together.</p>
+                </div>
+                <div class="footer-links">
+                    <a href="{% url 'about' %}">About {{ site_name }}</a>
+                    <a href="{% url 'help' %}">Help & orders</a>
+                    <a href="{% url 'seller_register' %}">Partner with us</a>
+                    <a href="{% url 'operations_login' %}">Operations sign-in</a>
+                </div>
+                <div class="footer-note">
+                    A considered wardrobe.
+                    <br>
+                    <span>IS2108 demonstration project</span>
+                    <br>
+                    <span>All prices in SGD. No real payments.</span>
+                </div>
+            </div>
+            <div class="container footer-bottom">
+                <span>© {{ site_name }} 2026</span>
+                <span>Independent by nature.</span>
+            </div>
+        </footer>
+        {% block extra_scripts %}
+        {% endblock %}
+    </body>
+</html>

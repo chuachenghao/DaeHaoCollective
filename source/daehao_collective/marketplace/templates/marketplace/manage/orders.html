@@ -1,0 +1,49 @@
+{% extends "marketplace/manage/base.html" %}
+{% block title %}Marketplace orders · {{ site_name }}{% endblock %}
+{% block workspace_content %}
+    <p class="eyebrow">Operations / fulfilment</p>
+    <h1>Marketplace orders</h1>
+    <form method="get" class="filter-form card">
+        <label>Search <input type="search" name="q" value="{{ q }}" placeholder="Order, customer or retailer"></label>
+        <label>Order status <select name="status"><option value="">All statuses</option>{% for value, label in statuses %}<option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+        <label>Placed from <input type="date" name="start" value="{{ request.GET.start }}"></label>
+        <label>Placed through <input type="date" name="end" value="{{ request.GET.end }}"></label>
+        <button class="button-secondary">Search</button>
+    </form>
+    {% if date_form.errors %}
+        <p class="notice" role="alert">Check the date range. Enter valid dates with the start before the end.</p>
+    {% endif %}
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Order</th>
+                    <th>Customer</th>
+                    <th>Placed</th>
+                    <th>Order status</th>
+                    <th>Payment</th>
+                    <th>Total</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for order in page_obj %}
+                    <tr>
+                        <td>{{ order.reference }}</td>
+                        <td>{{ order.customer.account.username }}</td>
+                        <td>{{ order.order_date|date:"d M Y" }}</td>
+                        <td>{{ order.get_order_status_display }}</td>
+                        <td>{{ order.get_payment_status_display }}</td>
+                        <td>SGD {{ order.total_amount|floatformat:2 }}</td>
+                        <td><a href="{% url 'operations_order_detail' order.pk %}">View order</a></td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="7">No orders match this search.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% include "marketplace/includes/pagination.html" %}
+{% endblock %}

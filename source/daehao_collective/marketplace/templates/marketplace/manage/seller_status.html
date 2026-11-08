@@ -1,0 +1,27 @@
+{% extends "marketplace/manage/base.html" %}
+{% block title %}Application status · {{ site_name }}{% endblock %}
+{% block workspace_content %}
+    <p class="eyebrow">Seller application</p>
+    <h1>{{ seller.store_name }}</h1>
+    <div class="card">
+        <p class="status">{{ seller.get_approval_status_display }}</p>
+        {% if seller.approval_status == 'PENDING' %}
+            <h2>Your application is being reviewed.</h2>
+            <p>Marketplace staff will review your store information before listing tools become available.</p>
+        {% elif seller.approval_status == 'REJECTED' %}
+            <h2>Your application was not approved.</h2>
+            <p>{{ seller.rejection_reason }}</p>
+        {% elif seller.approval_status == 'SUSPENDED' %}
+            <h2>Your store is currently suspended.</h2>
+            <p>Your historical orders and sales remain available to view. Marketplace staff can continue fulfilment
+            of existing orders.</p>
+        {% else %}
+            <h2>Your store is approved.</h2>
+            <p><a href="{% url 'seller_dashboard' %}">Open your seller dashboard</a>.</p>
+        {% endif %}
+        <p>Demo contact: <a href="mailto:onboarding@example.com">onboarding@example.com</a></p>
+    </div>
+    <h2>Submitted information</h2>
+    <p>{{ seller.store_description|linebreaksbr }}</p>
+    <p>{{ seller.email }}</p>
+{% endblock %}

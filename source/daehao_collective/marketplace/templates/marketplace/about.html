@@ -1,0 +1,40 @@
+{% extends 'marketplace/base.html' %}
+{% load static %}
+{% block title %}About {{ site_name }} — Independent by nature{% endblock %}
+{% block content %}
+    <div class="container page about-page">
+        <header class="page-heading">
+            <p class="eyebrow">The story / About {{ site_name }}</p>
+            <h1>A considered wardrobe.<br>A connected marketplace.</h1>
+        </header>
+        <div class="about-layout">
+            <div class="about-illustration">
+                <img src="{% static 'marketplace/images/editorial.svg' %}" alt="{{ site_name }}'s original illustration of considered everyday clothing">
+            </div>
+            <div class="prose">
+                <p class="eyebrow">Independent by nature</p>
+                <h2>Clothing with a point of view.</h2>
+                <p>{{ site_name }} brings emerging fashion labels and independent clothing retailers together. We
+                believe finding your next everyday piece should also be a chance to discover a smaller business.</p>
+                <p>Browse across labels, choose the exact size and colour you want, and bring your selection
+                together in one bag. Each retailer fulfils its own portion of your order.</p>
+                <h3>Discovery that starts with you.</h3>
+                <p>You can optionally save your height, weight and favourite styles. Our trained demonstration model
+                uses these inputs to rank clothing for discovery. It uses synthetic training data; its
+                recommendations do not guarantee real-world preference, garment fit or a correct size.</p>
+                <p>You can clear your personalisation at any time and continue shopping.</p>
+                <a href="{% url 'catalogue' %}" class="button button-secondary">Explore the collection →</a>
+            </div>
+        </div>
+        <div class="partnership-strip">
+            <div>
+                <p class="eyebrow">For emerging fashion businesses</p>
+                <h2>Your label. A wider audience.</h2>
+                <p>Apply to join {{ site_name }}. Product listings are free, with commission on completed sales.</p>
+            </div>
+            <a href="{% url 'seller_register' %}" class="button button-secondary">Become a partner →</a>
+        </div>
+        <p class="muted small">{{ site_name }} is an IS2108 coursework demonstration. Brands and garments are
+        fictional fixtures. Checkout simulates payment and does not transfer funds.</p>
+    </div>
+{% endblock %}

@@ -1,0 +1,49 @@
+{% extends "marketplace/manage/base.html" %}
+{% block title %}Model readiness · {{ site_name }}{% endblock %}
+{% block workspace_content %}
+    <p class="eyebrow">Operations / recommendations</p>
+    <h1>Recommendation readiness</h1>
+    <section class="card">
+        <h2>{% if readiness.ready %}Ready / synthetic demonstration{% else %}Personalisation unavailable{% endif %}</h2>
+        <p>{{ readiness.message }}</p>
+        <p class="muted">This read-only check uses a fictional profile for its inference probe. Customer
+        measurements are never displayed.</p>
+        <a href="{% url 'operations_model' %}" class="button-secondary">Check artifact again</a>
+    </section>
+    {% if readiness.unsupported_categories %}
+        <p class="notice">Unsupported categories: {{ readiness.unsupported_categories|join:", " }}</p>
+    {% endif %}
+    {% if readiness.unsupported_styles %}
+        <p class="notice">Unsupported styles: {{ readiness.unsupported_styles|join:", " }}</p>
+    {% endif %}
+    <section class="card">
+        <h2>Training and compatibility metadata</h2>
+        {% if readiness.metadata %}
+            <dl>
+                {% for key, value in readiness.metadata.items %}
+                    <dt><strong>{{ key }}</strong></dt>
+                    <dd>{{ value }}</dd>
+                {% endfor %}
+            </dl>
+        {% else %}
+            <p>No trusted model metadata is available.</p>
+        {% endif %}
+    </section>
+    <section class="card">
+        <h2>Recorded held-out validation</h2>
+        <p>These measurements describe synthetic validation data. They do not establish real-world garment fit or
+        purchase accuracy.</p>
+        {% if readiness.metrics %}
+            <dl>
+                {% for key, value in readiness.metrics.items %}
+                    <dt><strong>{{ key }}</strong></dt>
+                    <dd>{{ value|default_if_none:"Not measured" }}</dd>
+                {% endfor %}
+            </dl>
+        {% else %}
+            <p>Not measured.</p>
+        {% endif %}
+    </section>
+    <p class="muted">A missing or incompatible model gives customers a labelled curated selection. Ordinary browsing
+    and checkout remain available. Model files can only be replaced through the trusted local setup process.</p>
+{% endblock %}

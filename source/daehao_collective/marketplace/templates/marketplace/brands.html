@@ -1,0 +1,44 @@
+{% extends 'marketplace/base.html' %}
+{% block title %}Independent labels — {{ site_name }}{% endblock %}
+{% block content %}
+    <div class="container page">
+        <header class="page-heading">
+            <p class="eyebrow">Discover / Our labels</p>
+            <h1>Independent perspectives.</h1>
+            <p class="intro">Meet the smaller labels doing things their own way.<br>Distinctive clothing, brought
+            together in one place.</p>
+        </header>
+        <form class="brand-search search-form" method="get">
+            <label class="sr-only" for="brand-search">Search labels</label>
+            <input id="brand-search" name="q" type="search" value="{{ query }}" placeholder="Find an independent label">
+            <button type="submit">Search →</button>
+        </form>
+        <div class="brand-directory">
+            {% for seller in sellers %}
+                <article class="brand-entry">
+                    <span class="brand-number">0{{ forloop.counter }}</span>
+                    <div>
+                        <h2><a href="{% url 'brand_detail' seller.pk %}">{{ seller.store_name }}</a></h2>
+                        <p>{{ seller.store_description }}</p>
+                    </div>
+                    <a class="text-link" href="{% url 'brand_detail' seller.pk %}">Explore the label
+                    <span aria-hidden="true">↗</span></a>
+                </article>
+            {% empty %}
+                <div class="empty-state">
+                    <h2>No labels found.</h2>
+                    <p>Try another name or view all of our independent labels.</p>
+                    <a href="{% url 'brands' %}" class="button button-secondary">View all labels</a>
+                </div>
+            {% endfor %}
+        </div>
+        <div class="partnership-strip">
+            <div>
+                <p class="eyebrow">For independent clothing businesses</p>
+                <h2>A place for your perspective.</h2>
+                <p>Free listings. A commission only when you sell.</p>
+            </div>
+            <a href="{% url 'seller_register' %}" class="button button-secondary">Partner with {{ site_name }} →</a>
+        </div>
+    </div>
+{% endblock %}

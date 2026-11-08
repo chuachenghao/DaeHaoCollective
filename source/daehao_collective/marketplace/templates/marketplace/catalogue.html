@@ -1,0 +1,179 @@
+{% extends 'marketplace/base.html' %}
+{% block title %}{{ page_title }} — {{ site_name }}{% endblock %}
+{% block content %}
+    <div class="container page catalogue-page">
+        <header class="page-heading">
+            <p class="eyebrow">{{ eyebrow }}</p>
+            <h1>{{ page_title }}</h1>
+            {% if brand %}
+                <p class="intro">{{ brand.store_description }}</p>
+                <a class="text-link" href="{% url 'brands' %}">All independent labels →</a>
+            {% endif %}
+        </header>
+        {% if selection %}
+            <div class="recommendation-strip {% if selection.personalised %}personalised{% endif %}">
+                <div>
+                    <strong>{% if selection.personalised %}Model-ranked selection{% else %}Curated selection{% endif %}</strong>
+                    <p>{{ selection.message }}</p>
+                    {% if selection.personalised %}
+                        <small>Shared-style labels describe matching tags. Recommendations do not guarantee garment
+                        fit or a correct size.</small>
+                    {% endif %}
+                </div>
+                <a href="{% url 'profile' %}" class="text-link">{% if selection.personalised %}Edit profile{% else %}Set
+                up your profile{% endif %} →</a>
+            </div>
+        {% endif %}
+        {% if filter_errors %}
+            <div class="error-summary" role="alert">
+                <strong>Please check your filters.</strong>
+                {% for error in filter_errors %}
+                    <p>{{ error }}</p>
+                {% endfor %}
+            </div>
+        {% endif %}
+        <form method="get" class="catalogue-layout">
+            <div class="catalogue-toolbar">
+                <div class="catalogue-search">
+                    <label for="catalogue-search">Search products and labels</label>
+                    <div class="search-form">
+                        <input id="catalogue-search" name="q" type="search" value="{{ query }}" placeholder="Try linen, everyday, or a label">
+                        <button type="submit">Search <span aria-hidden="true">→</span></button>
+                    </div>
+                </div>
+                <div class="sort-field">
+                    <label for="sort">Sort by</label>
+                    <select name="sort" id="sort">
+                        {% if is_for_you and selection.personalised %}
+                            <option value="recommended" {% if sort == 'recommended' %}selected{% endif %}>Recommended</option>
+                        {% endif %}
+                        <option value="name" {% if sort == 'name' %}selected{% endif %}>Product name</option>
+                        <option value="price_asc" {% if sort == 'price_asc' %}selected{% endif %}>Price: low to high</option>
+                        <option value="price_desc" {% if sort == 'price_desc' %}selected{% endif %}>Price: high to
+                        low</option>
+                    </select>
+                </div>
+                <button class="button button-secondary sort-submit" type="submit">Apply sort</button>
+            </div>
+            <aside class="catalogue-sidebar">
+                <details class="filters" open>
+                    <summary>Filters <span aria-hidden="true">+</span></summary>
+                    <div class="filter-content">
+                        <fieldset>
+                            <legend>Category</legend>
+                            {% for category in categories %}
+                                <label class="checkbox-label"><input type="checkbox" name="category" value="{{ category.pk }}" {% if category.pk|stringformat:'s' in selected.category %}checked{% endif %}>{{ category.name }}</label>
+                            {% endfor %}
+                        </fieldset>
+                        <fieldset>
+                            <legend>Style</legend>
+                            {% for style in styles %}
+                                <label class="checkbox-label"><input type="checkbox" name="style" value="{{ style.pk }}" {% if style.pk|stringformat:'s' in selected.style %}checked{% endif %}>{{ style.name }}</label>
+                            {% endfor %}
+                        </fieldset>
+                        {% if not brand %}
+                            <fieldset>
+                                <legend>Independent label</legend>
+                                {% for seller in sellers %}
+                                    <label class="checkbox-label"><input type="checkbox" name="seller" value="{{ seller.pk }}" {% if seller.pk|stringformat:'s' in selected.seller %}checked{% endif %}>{{ seller.store_name }}</label>
+                                {% endfor %}
+                            </fieldset>
+                        {% endif %}
+                        <fieldset>
+                            <legend>Price (SGD)</legend>
+                            <div class="price-inputs">
+                                <div>
+                                    <label for="min-price">From</label>
+                                    <input id="min-price" name="min_price" type="number" min="0" step="0.01" value="{{ min_price }}" placeholder="0">
+                                </div>
+                                <span aria-hidden="true">—</span>
+                                <div>
+                                    <label for="max-price">To</label>
+                                    <input id="max-price" name="max_price" type="number" min="0" step="0.01" value="{{ max_price }}" placeholder="Any">
+                                </div>
+                            </div>
+                        </fieldset>
+                        <fieldset>
+                            <legend>Size</legend>
+                            <div class="size-filters">
+                                {% for size in sizes %}
+                                    <label class="checkbox-label"><input type="checkbox" name="size" value="{{ size }}" {% if size in selected.size %}checked{% endif %}>{{ size }}</label>
+                                {% endfor %}
+                            </div>
+                        </fieldset>
+                        <fieldset>
+                            <legend>Colour</legend>
+                            {% for colour in colours %}
+                                <label class="checkbox-label"><input type="checkbox" name="colour" value="{{ colour }}" {% if colour in selected.colour %}checked{% endif %}>{{ colour }}</label>
+                            {% endfor %}
+                        </fieldset>
+                        <fieldset>
+                            <legend>Availability</legend>
+                            <label class="checkbox-label"><input type="checkbox" name="stock" value="1" {% if stock_only %}checked{% endif %}>In
+                            stock only</label>
+                        </fieldset>
+                        <button class="button filter-apply" type="submit">Apply filters <span aria-hidden="true">→</span></button>
+                        <a class="clear-filters" href="{{ request.path }}">Clear all</a>
+                    </div>
+                </details>
+            </aside>
+            <div class="catalogue-results">
+                <div class="results-meta">
+                    <span>{{ product_count }} product{{ product_count|pluralize }}{% if query %} for “{{ query }}”{% endif %}</span>
+                    {% if has_filters %}
+                        <a href="{{ request.path }}">Clear selected filters ×</a>
+                    {% else %}
+                        <span>Thoughtfully selected. Independently made.</span>
+                    {% endif %}
+                </div>
+                {% if has_filters %}
+                    <div class="applied-filters" aria-label="Selected filters">
+                        {% for category in categories %}
+                            {% if category.pk|stringformat:'s' in selected.category %}
+                                <span>{{ category.name }}</span>
+                            {% endif %}
+                        {% endfor %}
+                        {% for style in styles %}
+                            {% if style.pk|stringformat:'s' in selected.style %}
+                                <span>{{ style.name }}</span>
+                            {% endif %}
+                        {% endfor %}
+                        {% for seller in sellers %}
+                            {% if seller.pk|stringformat:'s' in selected.seller %}
+                                <span>{{ seller.store_name }}</span>
+                            {% endif %}
+                        {% endfor %}
+                        {% for size in selected.size %}
+                            <span>Size {{ size }}</span>
+                        {% endfor %}
+                        {% for colour in selected.colour %}
+                            <span>{{ colour }}</span>
+                        {% endfor %}
+                        {% if stock_only %}
+                            <span>In stock</span>
+                        {% endif %}
+                        {% if min_price %}
+                            <span>From SGD {{ min_price }}</span>
+                        {% endif %}
+                        {% if max_price %}
+                            <span>To SGD {{ max_price }}</span>
+                        {% endif %}
+                    </div>
+                {% endif %}
+                <div class="product-grid">
+                    {% for product in products %}
+                        {% include 'marketplace/includes/product_card.html' %}
+                    {% empty %}
+                        <div class="empty-state">
+                            <span class="eyebrow">Room to explore</span>
+                            <h2>No clothing matches these filters.</h2>
+                            <p>Try a broader search, a different style, or clear your selected filters.</p>
+                            <a class="button button-secondary" href="{{ request.path }}">Clear filters →</a>
+                        </div>
+                    {% endfor %}
+                </div>
+                {% include 'marketplace/includes/pagination.html' %}
+            </div>
+        </form>
+    </div>
+{% endblock %}

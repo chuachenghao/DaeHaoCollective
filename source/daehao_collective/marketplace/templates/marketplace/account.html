@@ -1,0 +1,14 @@
+{% extends 'marketplace/base.html' %}
+{% block title %}My account · {{ site_name }}{% endblock %}
+{% block content %}
+<section class="container page">
+  <p class="eyebrow">MY ACCOUNT / DETAILS</p><h1>Your account</h1>
+  {% include 'marketplace/includes/account_nav.html' %}
+  <div class="two-column"><form method="post" class="form card">
+    {% csrf_token %}<p><strong>Username</strong><br>{{ user.username }} <span class="muted">(cannot be changed)</span></p>
+    {% include 'marketplace/includes/form_fields.html' %}<button class="button">Save details</button>
+  </form><aside><h2>A little more considered.</h2><p>Your account keeps your shopping in one place. Change only the information you choose to share.</p>
+    {% if user.role == 'CUSTOMER' %}<a href="{% url 'profile' %}">Set up your optional discovery profile →</a>{% endif %}
+  </aside></div>
+</section>
+{% endblock %}

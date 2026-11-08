@@ -1,0 +1,42 @@
+{% extends "marketplace/manage/base.html" %}
+{% block title %}{{ seller.store_name }} · {{ site_name }}{% endblock %}
+{% block workspace_content %}
+    <p class="eyebrow">Operations / retailer</p>
+    <h1>{{ seller.store_name }}</h1>
+    <p>Account: {{ seller.account.username }} / {{ seller.account.email }}</p>
+    <p class="status">{{ seller.get_approval_status_display }}</p>
+    {% if seller.rejection_reason %}
+        <p>Review reason: {{ seller.rejection_reason }}</p>
+    {% endif %}
+    <form method="post" class="form card">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="save">
+        {% include "marketplace/includes/form_fields.html" %}
+        <button class="button">Save retailer</button>
+    </form>
+    <section class="card">
+        <h2>Approval and trading status</h2>
+        <p>Suspension stops new purchases. It preserves existing orders and never restores purchased stock.</p>
+        <form method="post" class="form">
+            {% csrf_token %}
+            <input type="hidden" name="expected_status" value="{{ seller.approval_status }}">
+            {% if seller.approval_status == 'PENDING' %}
+                <label>Rejection reason (required to reject)<textarea name="reason" rows="3"></textarea></label>
+            {% endif %}
+            <label><input type="checkbox" name="confirm" value="yes" required> I confirm this retailer status
+            decision.</label>
+            <div class="actions">
+                {% if seller.approval_status == 'PENDING' %}
+                    <button class="button" name="action" value="approve">Approve application</button>
+                    <button class="button-secondary" name="action" value="reject">Reject application</button>
+                {% elif seller.approval_status == 'APPROVED' %}
+                    <button class="button-secondary" name="action" value="suspend">Suspend retailer</button>
+                {% elif seller.approval_status == 'SUSPENDED' %}
+                    <button class="button" name="action" value="reactivate">Reactivate retailer</button>
+                {% else %}
+                    <p>A rejected application cannot trade. Its business record is retained.</p>
+                {% endif %}
+            </div>
+        </form>
+    </section>
+{% endblock %}

@@ -1,0 +1,17 @@
+{% extends 'marketplace/base.html' %}
+{% block title %}{% if seller %}Become a seller{% else %}Create an account{% endif %} · {{ site_name }}{% endblock %}
+{% block content %}
+    <section class="container page auth-page">
+        <p class="eyebrow">{% if seller %}INDEPENDENT LABELS / PARTNER WITH US{% else %}MY ACCOUNT{% endif %}</p>
+        <h1>{% if seller %}A place for your label.{% else %}Make yourself at home.{% endif %}</h1>
+        <p>{% if seller %}Tell us about your store. Our team will review your application before you can list
+        products. Listings are free; commission applies to sales.{% else %}One account for independent labels, a
+        saved bag and your own selection. Personalisation is optional.{% endif %}</p>
+        <form method="post" class="form card">
+            {% csrf_token %}
+            {% include 'marketplace/includes/form_fields.html' %}
+            <button type="submit" class="button">{% if seller %}Submit seller application{% else %}Create account{% endif %}</button>
+        </form>
+        <p>Already registered? <a href="{% url 'login' %}">Sign in →</a></p>
+    </section>
+{% endblock %}

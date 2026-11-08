@@ -1,0 +1,56 @@
+{% extends 'marketplace/base.html' %}
+{% load static %}
+{% block content %}
+    <section class="hero">
+        <div class="hero-copy">
+            <p class="eyebrow">The everyday edit</p>
+            <h1>Clothing for<br>your everyday.</h1>
+            <p class="hero-description">Discover considered pieces from independent<br class="desktop-only"> labels,
+            together in one place.</p>
+            <a class="button button-secondary hero-button" href="{% url 'catalogue' %}">Explore clothing
+            <span aria-hidden="true">→</span></a>
+            <a class="hero-brand-link" href="{% url 'brands' %}">Meet the independent labels
+            <span aria-hidden="true">↗</span></a>
+        </div>
+        <div class="hero-image">
+            <img src="{% static 'marketplace/images/editorial.svg' %}" alt="Original editorial illustration of an ivory linen shirt and charcoal trousers">
+            <span class="image-caption">A study in everyday essentials / {{ site_name }}</span>
+        </div>
+    </section>
+    <section class="container home-selection">
+        <div class="section-heading">
+            <div>
+                <p class="eyebrow">Independent by nature</p>
+                <h2>{% if selection.personalised %}Selected for your preferences{% else %}Curated selection{% endif %}</h2>
+            </div>
+            <a class="text-link" href="{% if selection.personalised %}{% url 'profile' %}{% else %}{% url 'catalogue' %}{% endif %}">{% if selection.personalised %}Edit
+            profile{% else %}View all clothing{% endif %} <span aria-hidden="true">→</span></a>
+        </div>
+        {% if not selection.personalised %}
+            <p class="selection-note">Considered pieces to get you started. <a href="{% url 'for_you' %}">Make
+            discovery more personal →</a></p>
+        {% endif %}
+        <div class="product-grid home-grid">
+            {% for product in products %}
+                {% include 'marketplace/includes/product_card.html' %}
+            {% empty %}
+                <div class="empty-state">
+                    <h3>A new collection is on its way.</h3>
+                    <p>Our independent labels are preparing their pieces. Please visit again soon.</p>
+                </div>
+            {% endfor %}
+        </div>
+    </section>
+    <section class="home-story">
+        <div class="container home-story-inner">
+            <p class="eyebrow">A different kind of marketplace</p>
+            <h2>Small labels.<br>Individual perspectives.</h2>
+            <div>
+                <p>Good clothing begins with a point of view. We bring emerging labels together, making it easier to
+                find the pieces that feel like you.</p>
+                <a class="text-link" href="{% url 'about' %}">The story behind {{ site_name }}
+                <span aria-hidden="true">→</span></a>
+            </div>
+        </div>
+    </section>
+{% endblock %}

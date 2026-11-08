@@ -1,0 +1,13 @@
+{% extends 'marketplace/base.html' %}
+{% block title %}Page not found — {{ site_name }}{% endblock %}
+{% block content %}
+    <div class="container page error-page">
+        <p class="eyebrow">404 / A missing thread</p>
+        <h1>We couldn't find this page.</h1>
+        <p>The piece or page you are looking for may have moved or become unavailable.</p>
+        <div class="actions">
+            <a class="button" href="{% url 'catalogue' %}">Explore clothing →</a>
+            <a class="button button-secondary" href="{% url 'home' %}">Return home</a>
+        </div>
+    </div>
+{% endblock %}

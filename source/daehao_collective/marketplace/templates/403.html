@@ -1,0 +1,13 @@
+{% extends 'marketplace/base.html' %}
+{% block title %}Access unavailable — {{ site_name }}{% endblock %}
+{% block content %}
+    <div class="container page error-page">
+        <p class="eyebrow">403 / Access unavailable</p>
+        <h1>This page belongs to another workspace.</h1>
+        <p>Your account does not have permission to open this page or complete this action.</p>
+        <div class="actions">
+            <a class="button" href="{% url 'home' %}">Return to the storefront</a>
+            <a class="button button-secondary" href="{% url 'account' %}">My account</a>
+        </div>
+    </div>
+{% endblock %}

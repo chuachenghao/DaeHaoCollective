@@ -1,0 +1,49 @@
+{% extends 'marketplace/base.html' %}
+{% load static %}
+{% block title %}Demo Purchase Summary {{ order.reference }} · {{ site_name }}{% endblock %}
+{% block content %}
+    <section class="container page print-summary">
+        <p class="eyebrow">{{ site_name }} / DEMO PURCHASE SUMMARY</p>
+        <h1>{{ order.reference }}</h1>
+        <p>{{ order.order_date|date:'d M Y, H:i' }} · {{ order.get_order_status_display }} ·
+        {{ order.get_payment_status_display }}</p>
+        <p>No real payment was taken. This is a demonstration purchase summary.</p>
+        <p>Prices and quantities are saved at purchase. Product and retailer names follow their current records.</p>
+        <h2>Delivery details</h2>
+        <p>{{ order.shipping_name }}<br>{{ order.shipping_address|linebreaksbr }}<br>Singapore
+        {{ order.shipping_postal }}<br>{{ order.shipping_phone }}</p>
+        {% for portion in order.seller_orders.all %}
+            <h2>{{ portion.seller.store_name }} / {{ portion.get_fulfilment_status_display }}</h2>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Product / variant</th>
+                            <th>Quantity</th>
+                            <th>Unit price</th>
+                            <th>Subtotal</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in portion.items.all %}
+                            <tr>
+                                <td>{{ item.variant.product.name }} / {{ item.variant.colour }} / {{ item.variant.size }}</td>
+                                <td>{{ item.quantity }}</td>
+                                <td>SGD {{ item.unit_price_at_sale }}</td>
+                                <td>SGD {{ item.line_subtotal }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <p>Retailer subtotal: SGD {{ portion.subtotal }}</p>
+        {% endfor %}
+        <h2>Total: SGD {{ order.total_amount }}</h2>
+        <div class="no-print">
+            <button class="button" type="button" id="print-order">Print summary</button>
+            <a href="{% url 'order_detail' order.pk %}">Return to order</a>
+            <p>You can also use your browser's Print command.</p>
+        </div>
+    </section>
+    <script src="{% static 'marketplace/print.js' %}" defer></script>
+{% endblock %}

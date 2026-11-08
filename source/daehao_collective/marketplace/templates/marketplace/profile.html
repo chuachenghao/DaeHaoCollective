@@ -1,0 +1,20 @@
+{% extends 'marketplace/base.html' %}
+{% block title %}Your preferences · {{ site_name }}{% endblock %}
+{% block content %}
+<section class="container page">
+  <p class="eyebrow">MY ACCOUNT / PROFILE</p><h1>A profile for your preferences</h1>
+  <p>Choose what to share for recommendations. Your profile is optional for ordinary shopping.</p>
+  {% include 'marketplace/includes/account_nav.html' %}
+  <div class="two-column"><form method="post" class="form card">
+    {% csrf_token %}{% include 'marketplace/includes/form_fields.html' %}
+    <div class="style-descriptions">{% for style in form.fields.styles.queryset %}<p><strong>{{ style.name }}</strong> — {{ style.description }}</p>{% endfor %}</div>
+    <button class="button" type="submit">Save and view For You</button>
+    <a href="{% url 'clear_profile' %}" class="text-link">Clear personalisation</a>
+  </form><aside class="card"><h2>How this works</h2>
+    <p>Your saved measurements and selected styles become inputs to a trained demonstration relevance model.</p>
+    <p>The results help discovery. They do not establish garment fit or a correct size. The model was trained on synthetic data, rather than real customer purchases.</p>
+    <p>Your measurements stay private. Sellers cannot view them.</p>
+    <a href="{% url 'catalogue' %}">Continue without a profile →</a>
+  </aside></div>
+</section>
+{% endblock %}

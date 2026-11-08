@@ -1,0 +1,9 @@
+<nav class="account-nav" aria-label="Account sections">
+  <a href="{% url 'account' %}">Account details</a>
+  {% if user.role == 'CUSTOMER' %}
+    <a href="{% url 'profile' %}">My profile</a>
+    <a href="{% url 'addresses' %}">Addresses</a>
+    <a href="{% url 'orders' %}">Orders</a>
+  {% endif %}
+  <a href="{% url 'password_change' %}">Change password</a>
+</nav>

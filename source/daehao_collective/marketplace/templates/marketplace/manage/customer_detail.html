@@ -1,0 +1,35 @@
+{% extends "marketplace/manage/base.html" %}
+{% block title %}{{ customer_account.username }} · {{ site_name }}{% endblock %}
+{% block workspace_content %}
+    <p class="eyebrow">Operations / customer account</p>
+    <h1>{{ customer_account.username }}</h1>
+    <p>{{ customer_account.email }}</p>
+    <p class="notice">Customer access cannot be deactivated because the UML does not include an account activity field.</p>
+    <h2>Order history</h2>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Order</th>
+                    <th>Date</th>
+                    <th>Status</th>
+                    <th>Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for order in orders %}
+                    <tr>
+                        <td><a href="{% url 'operations_order_detail' order.pk %}">{{ order.reference }}</a></td>
+                        <td>{{ order.order_date|date:"d M Y" }}</td>
+                        <td>{{ order.get_order_status_display }}</td>
+                        <td>SGD {{ order.total_amount|floatformat:2 }}</td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="4">This customer has no orders.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock %}

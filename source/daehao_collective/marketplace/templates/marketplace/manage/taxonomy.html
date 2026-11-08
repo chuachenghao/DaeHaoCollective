@@ -1,0 +1,62 @@
+{% extends "marketplace/manage/base.html" %}
+{% block title %}{{ heading }} · {{ site_name }}{% endblock %}
+{% block workspace_content %}
+    <p class="eyebrow">Operations / shared vocabulary</p>
+    <h1>{{ heading }}</h1>
+    <p class="muted">Referenced values cannot be deleted. After renaming a value, check whether the recommendation model supports its new name.</p>
+    {% if unsupported %}
+        <p class="notice">Current model does not support: {{ unsupported|join:", " }}. Relevant personalisation
+        requests use a labelled curated fallback. <a href="{% url 'operations_model' %}">Check model status</a>.</p>
+    {% endif %}
+    <div class="two-column">
+        <section>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            {% if is_style %}<th>Description</th>{% endif %}
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for value in records %}
+                            <tr>
+                                <td>{{ value.name }}</td>
+                                {% if is_style %}<td>{{ value.description }}</td>{% endif %}
+                                <td><a href="?edit={{ value.pk }}">Edit</a></td>
+                            </tr>
+                        {% empty %}
+                            <tr>
+                                <td colspan="{% if is_style %}3{% else %}2{% endif %}">No vocabulary values yet.</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </section>
+        <section class="card">
+            <h2>{% if record %}Edit {{ record.name }}{% else %}Add a value{% endif %}</h2>
+            <form method="post" class="form">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="save">
+                {% if record %}
+                    <input type="hidden" name="record_id" value="{{ record.pk }}">
+                {% endif %}
+                {% include "marketplace/includes/form_fields.html" %}
+                <button class="button">Save value</button>
+            </form>
+            {% if record %}
+                <hr>
+                <form method="post" class="form">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="delete">
+                    <input type="hidden" name="record_id" value="{{ record.pk }}">
+                    <label><input type="checkbox" name="confirm" value="yes" required> Delete {{ record.name }} if
+                    it has no references.</label>
+                    <button class="button-secondary">Delete value</button>
+                </form>
+            {% endif %}
+        </section>
+    </div>
+{% endblock %}

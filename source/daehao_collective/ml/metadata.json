@@ -1,0 +1,80 @@
+{
+  "schema_version": 2,
+  "algorithm": "DecisionTreeClassifier",
+  "source": "Fictional customer-product pairs in the supplied synthetic_pairs.csv dataset",
+  "random_seed": 2108,
+  "dataset_rows": 3000,
+  "training_rows": 2400,
+  "validation_rows": 600,
+  "split": "Stratified 80% training / 20% held-out validation",
+  "target": "Fictional binary customer-product relevance (0 / 1)",
+  "feature_names": [
+    "height_cm",
+    "weight_kg",
+    "shared_style_count",
+    "customer_minimal",
+    "customer_casual",
+    "customer_workwear",
+    "customer_streetwear",
+    "customer_formal",
+    "customer_vintage",
+    "product_minimal",
+    "product_casual",
+    "product_workwear",
+    "product_streetwear",
+    "product_formal",
+    "product_vintage",
+    "category_tops",
+    "category_bottoms",
+    "category_outerwear",
+    "category_dresses"
+  ],
+  "style_slugs": [
+    "minimal",
+    "casual",
+    "workwear",
+    "streetwear",
+    "formal",
+    "vintage"
+  ],
+  "category_slugs": [
+    "tops",
+    "bottoms",
+    "outerwear",
+    "dresses"
+  ],
+  "supported_ranges": {
+    "height_cm": [
+      140,
+      210
+    ],
+    "weight_kg": [
+      35,
+      160
+    ]
+  },
+  "metrics": {
+    "accuracy": 0.826667,
+    "confusion_matrix": [
+      [
+        332,
+        48
+      ],
+      [
+        56,
+        164
+      ]
+    ],
+    "precision": null,
+    "recall": null,
+    "f1": null,
+    "roc_auc": null
+  },
+  "metric_note": "Held-out synthetic accuracy measures invented labels, not real customers, fit or commercial performance.",
+  "parameters": {
+    "criterion": "gini",
+    "splitter": "best",
+    "max_depth": 10
+  },
+  "ranking": "Predicted class 1 before class 0, then stable product id for ties"
+}

@@ -1,0 +1,13 @@
+{% extends 'marketplace/base.html' %}
+{% block title %}{{ title }} · {{ site_name }}{% endblock %}
+{% block content %}
+<section class="container page auth-page">
+  <p class="eyebrow">MY ACCOUNT</p><h1>{{ title }}</h1><p>{{ intro }}</p>
+  <form method="post" class="form card">
+    {% csrf_token %}{% if return_checkout %}<input type="hidden" name="checkout" value="1">{% endif %}
+    {% include 'marketplace/includes/form_fields.html' %}
+    <button class="button" type="submit">{{ button_label }}</button>
+    <a href="{{ back_url }}" class="button button-secondary">Back</a>
+  </form>
+</section>
+{% endblock %}

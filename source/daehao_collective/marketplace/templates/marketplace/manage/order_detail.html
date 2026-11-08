@@ -1,0 +1,87 @@
+{% extends "marketplace/manage/base.html" %}
+{% block title %}{{ order.reference }} · {{ site_name }}{% endblock %}
+{% block workspace_content %}
+    <p class="eyebrow">{{ workspace_title }} / fulfilment</p>
+    <h1>Order {{ order.reference }}</h1>
+    <p>{{ order.order_date|date:"d M Y, H:i" }} / {{ order.get_payment_status_display }} /
+    {{ order.get_order_status_display }}</p>
+    {% if is_operations %}
+        <p>Customer: {{ order.customer.account.username }}</p>
+    {% endif %}
+    <p class="muted">Prices and quantities are saved at purchase. Product and retailer names follow their current records.</p>
+    {% for portion in portions %}
+        <section class="card">
+            <div class="page-heading">
+                <h2>{{ portion.seller.store_name }}</h2>
+                <span class="status">{{ portion.get_fulfilment_status_display }}</span>
+            </div>
+            <p>Subtotal SGD {{ portion.subtotal|floatformat:2 }} / Rate
+            {{ portion.commission_percent|floatformat:2 }}% / Quoted commission SGD
+            {{ portion.commission_amount|floatformat:2 }}</p>
+            {% if not portion.has_consistent_items %}
+                <p class="notice error">This order has inconsistent item ownership and needs staff review.
+                Fulfilment changes are blocked; contact a marketplace administrator to inspect the saved records.</p>
+            {% endif %}
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Purchased product</th>
+                            <th>Variant</th>
+                            <th>Quantity</th>
+                            <th>Unit price</th>
+                            <th>Subtotal</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in portion.items.all %}
+                            <tr>
+                                <td>{{ item.variant.product.name }}<br><span class="muted">{{ item.variant.sku }}</span></td>
+                                <td>{{ item.variant.colour }} / {{ item.variant.size }}</td>
+                                <td>{{ item.quantity }}</td>
+                                <td>SGD {{ item.unit_price_at_sale|floatformat:2 }}</td>
+                                <td>SGD {{ item.line_subtotal|floatformat:2 }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% if can_fulfil and portion.has_consistent_items and order.payment_status == 'PAID' %}
+                {% if portion.fulfilment_status == 'PROCESSING' or portion.fulfilment_status == 'SHIPPED' %}
+                    <form method="post" class="inline-form">
+                        {% csrf_token %}
+                        <input type="hidden" name="portion_id" value="{{ portion.pk }}">
+                        <input type="hidden" name="expected_status" value="{{ portion.fulfilment_status }}">
+                        {% if portion.fulfilment_status == 'PROCESSING' %}
+                            <button class="button" name="target_status" value="SHIPPED">Mark shipped</button>
+                        {% else %}
+                            <button class="button" name="target_status" value="DELIVERED">Mark delivered</button>
+                        {% endif %}
+                    </form>
+                {% endif %}
+            {% endif %}
+        </section>
+    {% endfor %}
+    <section class="card">
+        <h2>Saved delivery details</h2>
+        <p>{{ order.shipping_name }}<br>{{ order.shipping_address }}<br>Singapore {{ order.shipping_postal }}<br>{{ order.shipping_phone }}</p>
+        {% if is_operations %}
+            <p>Total SGD {{ order.total_amount|floatformat:2 }}</p>
+        {% endif %}
+        <p class="muted">These are the details saved at purchase. Address-book edits do not change this order.</p>
+    </section>
+    {% if is_operations and order.can_cancel %}
+        <section class="card">
+            <h2>Cancel the full order</h2>
+            <p>Every retailer portion is still processing. All items shown above will be cancelled and stock
+            restored once.</p>
+            <form method="post" class="form">
+                {% csrf_token %}
+                <input type="hidden" name="action" value="cancel">
+                <label><input type="checkbox" name="confirm" value="yes" required> I confirm cancellation of order
+                {{ order.reference }} and all its items.</label>
+                <button class="button-secondary">Cancel full order</button>
+            </form>
+        </section>
+    {% endif %}
+{% endblock %}

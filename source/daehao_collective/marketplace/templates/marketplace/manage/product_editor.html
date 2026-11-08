@@ -1,0 +1,46 @@
+{% extends "marketplace/manage/base.html" %}
+{% block title %}{{ heading }} · {{ site_name }}{% endblock %}
+{% block workspace_content %}
+    <p class="eyebrow">{{ workspace_title }} / product editor</p>
+    <h1>{{ heading }}</h1>
+    {% if product %}
+        <p>Retailer (locked): {{ product.seller.store_name }} · {{ product.get_approval_status_display }} /
+        {% if product.is_active %}Published{% else %}Inactive{% endif %}</p>
+        {% if product.is_purchasable %}
+            <a href="{% url 'product_detail' product.pk %}">Preview product ↗</a>
+        {% endif %}
+        {% if product.rejection_reason %}
+            <p class="notice">Review reason: {{ product.rejection_reason }}</p>
+        {% endif %}
+    {% endif %}
+    <form method="post" enctype="multipart/form-data" class="form card">
+        {% csrf_token %}
+        <input type="hidden" name="action" value="save">
+        {% include "marketplace/includes/form_fields.html" %}
+        <button class="button">Save product</button>
+    </form>
+    {% if product %}
+        <section class="card">
+            <div class="page-heading">
+                <h2>Variants and current inventory</h2>
+                {% if is_operations %}
+                    <a class="button-secondary" href="{% url 'operations_variant_create' product.pk %}">{% else %}<a class="button-secondary" href="{% url 'seller_variant_create' product.pk %}">{% endif %}Add
+                    variant</a></div> <div class="table-wrap"><table><thead><tr><th>SKU</th><th>Size</th><th>Colour</th><th>Stock</th><th>Status</th><th>Actions</th></tr></thead><tbody>
+                    {% for variant in variants %}<tr><td>{{ variant.sku }}</td><td>{{ variant.size }}</td><td>{{ variant.colour }}</td><td>{{ variant.stock_quantity }}</td><td>{% if variant.stock_quantity %}In stock{% else %}Sold out{% endif %}</td><td>
+                    {% if is_operations %}<a href="{% url 'operations_variant_edit' variant.pk %}">Edit</a> /
+                    <a href="{% url 'operations_inventory_adjust' variant.pk %}">Adjust stock</a>{% else %}<a href="{% url 'seller_variant_edit' variant.pk %}">Edit</a>
+                    / <a href="{% url 'seller_inventory_adjust' variant.pk %}">Adjust stock</a>{% endif %}</td></tr>
+                    {% empty %}<tr><td colspan="6">No variants yet. Add a size and colour before publication.</td></tr>{% endfor %}</tbody></table></div></section>
+                    <section class="card"><h2>Publication</h2><p>Prepare the product and variants, submit it for
+                    staff approval, then publish or archive the approved listing.</p>
+                    <form method="post" class="form">{% csrf_token %}<input type="hidden" name="expected_status" value="{{ product.approval_status }}">
+                    {% if is_operations %}<label>Rejection reason<textarea name="reason" rows="2"></textarea></label>{% endif %}
+                    <label><input type="checkbox" name="confirm" value="yes" required> I confirm the selected
+                    product action.</label> <div class="actions">{% if is_operations %}<button class="button" name="action" value="approve">Approve
+                    and publish</button><button class="button-secondary" name="action" value="reject">Reject product</button>
+                    {% elif product.approval_status == 'DRAFT' or product.approval_status == 'REJECTED' %}<button class="button" name="action" value="submit">Submit
+                    for approval</button>{% endif %}
+                    {% if product.approval_status == 'APPROVED' and not product.is_active %}<button class="button" name="action" value="publish">Publish
+                    product</button>{% endif %} {% if product.is_active %}<button class="button-secondary" name="action" value="archive">Archive
+                    product</button>{% endif %} <button class="button-secondary" name="action" value="delete">Delete
+                    if unreferenced</button></div> </form></section> {% endif %} {% endblock %}

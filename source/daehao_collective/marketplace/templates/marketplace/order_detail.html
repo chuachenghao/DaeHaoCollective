@@ -1,0 +1,56 @@
+{% extends 'marketplace/base.html' %}
+{% block title %}{{ order.reference }} · {{ site_name }}{% endblock %}
+{% block content %}
+    <section class="container page">
+        <p class="eyebrow">MY ACCOUNT / ORDERS / {{ order.reference }}</p>
+        <h1>{% if confirmation and order.order_status != 'CANCELLED' %}Your order is confirmed.{% else %}Order
+        {{ order.reference }}{% endif %}</h1>
+        <p>{{ order.reference }} / {{ order.order_date|date:'d M Y, H:i' }} / Demo payment:
+        {{ order.get_payment_status_display }}</p>
+        <p><span class="status">{{ order.get_order_status_display }}</span></p>
+        <div class="two-column purchase-layout">
+            <div>
+                {% for portion in order.seller_orders.all %}
+                    <section class="card retailer-group">
+                        <div class="section-heading">
+                            <h2>{{ portion.seller.store_name }}</h2>
+                            <span class="status">{{ portion.get_fulfilment_status_display }}</span>
+                        </div>
+                        {% for item in portion.items.all %}
+                            <article class="order-line">
+                                <h3>{{ item.variant.product.name }}</h3>
+                                <p>{{ item.variant.colour }} / {{ item.variant.size }} / Qty {{ item.quantity }}<br>SGD
+                                {{ item.unit_price_at_sale }} each</p>
+                                <strong>SGD {{ item.line_subtotal }}</strong>
+                            </article>
+                        {% endfor %}
+                        <p>Retailer subtotal: <strong>SGD {{ portion.subtotal }}</strong></p>
+                    </section>
+                {% endfor %}
+            </div>
+            <aside class="card order-summary">
+                <h2>Delivery snapshot</h2>
+                <strong>{{ order.shipping_name }}</strong>
+                <p>{{ order.shipping_address|linebreaksbr }}<br>Singapore {{ order.shipping_postal }}<br>{{ order.shipping_phone }}</p>
+                <dl>
+                    <dt>Total</dt>
+                    <dd><strong>SGD {{ order.total_amount }}</strong></dd>
+                </dl>
+                <p>Each brand fulfils its portion. Delivery details, prices and quantities are saved at purchase. Product and retailer names follow their current records.</p>
+                {% if user.role == 'CUSTOMER' %}
+                    <form action="{% url 'order_buy_again' order.pk %}" method="post">
+                        {% csrf_token %}
+                        <button class="button">Buy available items again</button>
+                    </form>
+                {% endif %}
+                <p><a href="{% url 'order_print' order.pk %}">Print summary →</a></p>
+                {% if order.can_cancel %}
+                    <a href="{% url 'order_cancel' order.pk %}" class="button button-secondary">Cancel entire order</a>
+                {% elif order.order_status != 'CANCELLED' %}
+                    <p>Cancellation is unavailable because a retailer portion has shipped or been delivered.</p>
+                {% endif %}
+            </aside>
+        </div>
+        <p><a href="{% url 'orders' %}">My orders →</a> &nbsp; <a href="{% url 'catalogue' %}">Continue shopping →</a></p>
+    </section>
+{% endblock %}

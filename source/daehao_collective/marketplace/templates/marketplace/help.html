@@ -1,0 +1,87 @@
+{% extends 'marketplace/base.html' %}
+{% block title %}Help & orders — {{ site_name }}{% endblock %}
+{% block content %}
+    <div class="container page help-page">
+        <header class="page-heading">
+            <p class="eyebrow">{{ site_name }} / Help</p>
+            <h1>How can we help?</h1>
+            <p class="intro">A little guidance for shopping with independent labels.</p>
+        </header>
+        <div class="help-layout">
+            <div class="faq-list">
+                <details open>
+                    <summary>How does shopping across labels work? <span>+</span></summary>
+                    <p>Browse clothing from multiple independent labels, select a size and colour, and add each
+                    piece to your bag. Your bag groups pieces by label and combines them into one checkout. Each
+                    label then fulfils its portion separately.</p>
+                </details>
+                <details>
+                    <summary>How do retailer deliveries work? <span>+</span></summary>
+                    <p>This demonstration supports Singapore delivery addresses with six-digit postal codes.
+                    Delivery is included in displayed prices. Each retailer portion has its own Processing, Shipped
+                    or Delivered status. We do not simulate courier tracking events.</p>
+                </details>
+                <details>
+                    <summary>What does a recommendation mean? <span>+</span></summary>
+                    <p>If you choose to complete your profile, a trained model ranks products using height, weight,
+                    preferred styles and product attributes. The model was trained on synthetic data. A
+                    recommendation helps discovery; it does not guarantee fit, a correct size or a purchase
+                    preference. Shared-style labels identify matching tags.</p>
+                    <p>If your profile is incomplete, the model is unavailable, an input is unsupported, or nothing
+                    is in stock, we explain the situation and provide a labelled curated selection where possible.</p>
+                    <a href="{% url 'profile' %}">Manage your optional profile →</a>
+                </details>
+                <details>
+                    <summary>How do I choose a size? <span>+</span></summary>
+                    <p>Read the size guidance supplied on each product page. Size labels and available size-colour
+                    combinations come from that label's inventory. Product-specific garment measurements are shown
+                    only when supplied. Check your exact combination before adding it to your bag.</p>
+                </details>
+                <details>
+                    <summary>How do demonstration payments work? <span>+</span></summary>
+                    <p>There are no real card fields and no payment provider. “Place demo order” simulates an
+                    approved payment and records an order. “Simulate declined payment” creates no order, changes no
+                    stock and keeps your bag intact. No money is transferred.</p>
+                </details>
+                <details>
+                    <summary>When can I cancel an order? <span>+</span></summary>
+                    <p>You can cancel the entire order while every retailer portion remains Processing and the demo
+                    payment is Paid. Confirm cancellation on your order detail page. The application restores
+                    purchased stock once and labels the simulated payment Refunded. Cancellation is unavailable
+                    after any retailer portion ships.</p>
+                    <a href="{% url 'orders' %}">View your orders →</a>
+                </details>
+                <details>
+                    <summary>Does adding to my bag reserve stock? <span>+</span></summary>
+                    <p>No. Your bag uses current prices and availability. Checkout checks stock, product activity
+                    and retailer status again. If anything changes after review, you must review the updated
+                    information before placing an order.</p>
+                </details>
+                <details>
+                    <summary>How do I clear my personalisation? <span>+</span></summary>
+                    <p>Open My Profile and choose Clear Personalisation. After confirmation, this removes saved
+                    measurements and style preferences. Your account, addresses, bag and previous orders remain
+                    available.</p>
+                </details>
+                <details>
+                    <summary>Can my clothing label join {{ site_name }}? <span>+</span></summary>
+                    <p>Submit a seller application with your store information. A marketplace administrator reviews
+                    applications before sellers can list products. Listings are free; the agreed commission reduces
+                    the seller's estimated revenue and is not an extra customer fee.</p>
+                    <a href="{% url 'seller_register' %}">Apply to partner with {{ site_name }} →</a>
+                </details>
+            </div>
+            <aside class="help-contact card">
+                <p class="eyebrow">A point of contact</p>
+                <h2>Still looking for help?</h2>
+                <p>Demo contact:<br><a href="mailto:help@example.com">help@example.com</a></p>
+                <p class="help-text">This is a demonstration email address. Opening the link does not submit a
+                support ticket.</p>
+                <hr>
+                <a class="text-link" href="{% url 'account' %}">My account →</a>
+                <a class="text-link" href="{% url 'orders' %}">My orders →</a>
+                <a class="text-link" href="{% url 'catalogue' %}">Continue exploring →</a>
+            </aside>
+        </div>
+    </div>
+{% endblock %}

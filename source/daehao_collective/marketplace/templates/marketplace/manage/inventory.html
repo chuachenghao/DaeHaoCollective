@@ -1,0 +1,45 @@
+{% extends "marketplace/manage/base.html" %}
+{% block title %}Inventory · {{ site_name }}{% endblock %}
+{% block workspace_content %}
+    <p class="eyebrow">{{ workspace_title }} / stock</p>
+    <h1>Inventory</h1>
+    <p class="muted">Low stock means 1–5 units. A variant with no units is sold out.</p>
+    <form method="get" class="filter-form card">
+        <label>Search <input type="search" name="q" value="{{ q }}" placeholder="SKU, product or retailer"></label>
+        <label>Availability <select name="stock"><option value="">All variants</option><option value="low" {% if selected_stock == 'low' %}selected{% endif %}>Low
+        stock: 1–5</option><option value="soldout" {% if selected_stock == 'soldout' %}selected{% endif %}>Sold out</option></select></label>
+        <button class="button-secondary">Apply filters</button>
+    </form>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Product / retailer</th>
+                    <th>SKU</th>
+                    <th>Size / colour</th>
+                    <th>Stock</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for variant in variants %}
+                    <tr>
+                        <td>{{ variant.product.name }}<br><span class="muted">{{ variant.product.seller.store_name }}</span></td>
+                        <td>{{ variant.sku }}</td>
+                        <td>{{ variant.size }} / {{ variant.colour }}</td>
+                        <td>{{ variant.stock_quantity }}</td>
+                        <td>{% if variant.stock_quantity == 0 %}Sold out{% elif variant.stock_quantity <= 5 %}Low
+                        stock{% else %}In stock{% endif %}</td>
+                        <td>{% if is_operations %}<a href="{% url 'operations_inventory_adjust' variant.pk %}">{% else %}<a href="{% url 'seller_inventory_adjust' variant.pk %}">{% endif %}Adjust
+                        stock</a></td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="6">No variants match this stock filter.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock %}

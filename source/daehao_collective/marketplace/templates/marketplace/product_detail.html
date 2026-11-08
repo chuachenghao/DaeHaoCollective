@@ -1,0 +1,115 @@
+{% extends 'marketplace/base.html' %}
+{% load static %}
+{% block title %}{{ product.name }} — {{ site_name }}{% endblock %}
+{% block content %}
+    <div class="container page product-page">
+        <nav class="breadcrumbs" aria-label="Breadcrumb">
+            <a href="{% url 'catalogue' %}">Shop</a>
+            <span>/</span>
+            <a href="{% url 'catalogue' %}?category={{ product.category.pk }}">{{ product.category }}</a>
+            <span>/</span>
+            <span>{{ product.name }}</span>
+        </nav>
+        <div class="product-detail-grid">
+            <div class="product-primary-image">
+                {% if product.image %}
+                    <img src="{{ product.image.url }}" alt="{{ product.name }} by {{ product.seller.store_name }}">
+                {% else %}
+                    <img src="{% static 'marketplace/images/shirt.svg' %}" alt="Garment placeholder for {{ product.name }}">
+                {% endif %}
+                <p class="image-caption">{% if not product.image %}Original {{ site_name }} illustration / Demo
+                collection{% else %}{{ product.seller.store_name }} / {{ product.name }}{% endif %}</p>
+            </div>
+            <div class="product-information">
+                <a class="eyebrow text-link" href="{% url 'brand_detail' product.seller.pk %}">{{ product.seller.store_name }}
+                <span aria-hidden="true">↗</span></a>
+                <h1>{{ product.name }}</h1>
+                <p class="detail-price">SGD {{ product.price|floatformat:2 }}</p>
+                <div class="product-description">
+                    {{ product.description|linebreaks }}
+                </div>
+                <div class="product-tags">
+                    {% for style in product.get_styles %}
+                        <a href="{% url 'catalogue' %}?style={{ style.pk }}">{{ style.name }}</a>
+                    {% endfor %}
+                </div>
+                {% if variants %}
+                    <form class="purchase-form" action="{% url 'cart_add' product.pk %}" method="post">
+                        {% csrf_token %}
+                        <fieldset class="variant-choices">
+                            <legend>Colour{% if selected_colour %}: {{ selected_colour }}{% endif %}</legend>
+                            <div class="choice-list">
+                                {% for colour in colours %}
+                                    <label class="choice"><input type="radio" name="colour" value="{{ colour }}" required {% if colour == selected_colour %}checked{% endif %}><span>{{ colour }}</span></label>
+                                {% endfor %}
+                            </div>
+                        </fieldset>
+                        <fieldset class="variant-choices">
+                            <legend>Size</legend>
+                            <div class="choice-list">
+                                {% for size in sizes %}
+                                    <label class="choice"><input type="radio" name="size" value="{{ size }}" required {% if size == selected_size %}checked{% endif %}><span>{{ size }}</span></label>
+                                {% endfor %}
+                            </div>
+                        </fieldset>
+                        <a href="#sizing" class="small-link">Size guidance ↓</a>
+                        <div class="quantity-row">
+                            <div class="quantity-field">
+                                <label for="quantity">Quantity</label>
+                                <input type="number" name="quantity" id="quantity" value="{{ quantity|default:1 }}" min="1" step="1" required>
+                            </div>
+                            <button class="check-stock" type="submit" formaction="{% url 'product_detail' product.pk %}">Check
+                            this combination →</button>
+                        </div>
+                        {% if selection_made %}
+                            {% if selected_variant and selected_variant.stock_quantity %}
+                                <p class="availability"><span aria-hidden="true">●</span> In stock /
+                                {{ selected_colour }}, {{ selected_size }} / {{ selected_variant.stock_quantity }}
+                                available</p>
+                            {% else %}
+                                <p class="field-error">This size and colour combination is unavailable. Please
+                                choose another.</p>
+                            {% endif %}
+                        {% endif %}
+                        {% if product.in_stock %}
+                            <button class="button add-to-bag" type="submit">Add to bag <span aria-hidden="true">→</span></button>
+                        {% else %}
+                            <p class="notice">This piece is currently sold out.</p>
+                            <button type="submit" class="button add-to-bag" disabled>Sold out</button>
+                        {% endif %}
+                        <p class="help-text">Choose your exact size and colour. Your bag does not reserve stock.</p>
+                    </form>
+                {% else %}
+                    <p class="notice">This product has no available variants.</p>
+                {% endif %}
+                <details class="product-accordion">
+                    <summary>Materials and care <span aria-hidden="true">+</span></summary>
+                    <p>See the product description above for the materials and care instructions supplied by this label.</p>
+                    <p>If a detail is missing, contact the label at {{ product.seller.email }}.</p>
+                </details>
+                <details id="sizing" class="product-accordion">
+                    <summary>Size guidance & recommendations <span aria-hidden="true">+</span></summary>
+                    <p>Available size labels: {{ product.size_labels|default:'Not available' }}.</p>
+                    <p>See the description for any garment measurements supplied by the label. Contact the label if you need more size information.</p>
+                    <p>Personal recommendations help you discover clothing. They do not establish garment fit or
+                    determine a correct size.</p>
+                </details>
+                <details class="product-accordion">
+                    <summary>Delivery & demonstration purchases <span aria-hidden="true">+</span></summary>
+                    <p>Each independent label fulfils its portion of your order. Delivery is included in this
+                    Singapore-only demonstration. No real payment is taken.</p>
+                    <a href="{% url 'help' %}">Read our shopping guidance →</a>
+                </details>
+                <details class="product-accordion">
+                    <summary>Variant availability <span aria-hidden="true">+</span></summary>
+                    <ul class="variant-availability">
+                        {% for variant in variants %}
+                            <li>{{ variant.colour }} / {{ variant.size }} <span>{% if variant.stock_quantity %}{{ variant.stock_quantity }}
+                            in stock{% else %}Sold out{% endif %}</span></li>
+                        {% endfor %}
+                    </ul>
+                </details>
+            </div>
+        </div>
+    </div>
+{% endblock %}

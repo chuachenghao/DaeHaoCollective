@@ -1,0 +1,67 @@
+{% extends "marketplace/manage/base.html" %}
+{% block title %}Sales and commissions · {{ site_name }}{% endblock %}
+{% block workspace_content %}
+    <p class="eyebrow">{{ workspace_title }} / sales report</p>
+    <h1>Sales &amp; commissions</h1>
+    <p class="muted">Filter dates refer to order placement. Values use saved transaction rates. A report does not
+    perform a seller payout.</p>
+    <form method="get" class="filter-form card">
+        {% include "marketplace/includes/form_fields.html" %}
+        <button class="button-secondary">Apply filters</button>
+    </form>
+    <div class="dashboard-grid">
+        <div class="stat-card card">
+            <span>Seller subtotals</span>
+            <strong>SGD {{ totals.sales|floatformat:2 }}</strong>
+        </div>
+        <div class="stat-card card">
+            <span>Quoted commission</span>
+            <strong>SGD {{ totals.quoted|floatformat:2 }}</strong>
+        </div>
+        <div class="stat-card card">
+            <span>Recognised commission</span>
+            <strong>SGD {{ totals.recognised|floatformat:2 }}</strong>
+        </div>
+        <div class="stat-card card">
+            <span>Estimated net before payouts</span>
+            <strong>SGD {{ totals.estimated_net|floatformat:2 }}</strong>
+        </div>
+    </div>
+    <p>Recognised commission includes delivered portions of paid orders only. Cancelled orders have no recognised
+    commission. Quoted figures preserve the original order terms.</p>
+    <p><a class="button-secondary" href="?{{ export_query }}">Export filtered CSV</a></p>
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Order / placed</th>
+                    <th>Retailer</th>
+                    <th>Status</th>
+                    <th>Subtotal</th>
+                    <th>Rate</th>
+                    <th>Quoted</th>
+                    <th>Recognised</th>
+                    <th>Estimated net</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for portion in portions %}
+                    <tr>
+                        <td>{% if is_operations %}<a href="{% url 'operations_order_detail' portion.order.pk %}">{% else %}<a href="{% url 'seller_order_detail' portion.pk %}">{% endif %}{{ portion.order.reference }}</a><br>{{ portion.order.order_date|date:"d M Y" }}</td>
+                        <td>{{ portion.seller.store_name }}</td>
+                        <td>{{ portion.get_fulfilment_status_display }}</td>
+                        <td>{{ portion.subtotal|floatformat:2 }}</td>
+                        <td>{{ portion.commission_percent|floatformat:2 }}%</td>
+                        <td>{{ portion.commission_amount|floatformat:2 }}</td>
+                        <td>{{ portion.recognised_commission|floatformat:2 }}</td>
+                        <td>{{ portion.net_revenue|floatformat:2 }}</td>
+                    </tr>
+                {% empty %}
+                    <tr>
+                        <td colspan="8">No seller-order portions match the filters.</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock %}
