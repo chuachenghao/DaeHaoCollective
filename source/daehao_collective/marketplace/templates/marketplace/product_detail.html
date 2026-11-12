@@ -18,7 +18,7 @@
                     <img src="{% static 'marketplace/images/shirt.svg' %}" alt="Garment placeholder for {{ product.name }}">
                 {% endif %}
                 <p class="image-caption">{% if not product.image %}Original {{ site_name }} illustration / Demo
-                collection{% else %}{{ product.seller.store_name }} / {{ product.name }}{% endif %}</p>
+                collection{% elif 'products/demo/catalogue/' in product.image.name %}AI-generated catalogue image / {{ product.name }}{% else %}{{ product.seller.store_name }} / {{ product.name }}{% endif %}</p>
             </div>
             <div class="product-information">
                 <a class="eyebrow text-link" href="{% url 'brand_detail' product.seller.pk %}">{{ product.seller.store_name }}

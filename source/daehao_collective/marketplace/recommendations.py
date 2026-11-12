@@ -1,4 +1,5 @@
 import json
+from types import SimpleNamespace
 
 import pandas as pd
 from joblib import load
@@ -128,11 +129,55 @@ def available_products(queryset=None):
     return products
 
 
-def recommend_products(customer, queryset=None):
+def recommend_products(customer, queryset=None, preview_style=None):
     products = list(available_products(queryset))
-    result = {"products": products, "personalised": False, "reason": "", "message": ""}
+    result = {
+        "products": products,
+        "personalised": False,
+        "reason": "",
+        "message": "",
+        "preview": False,
+        "preview_style": "",
+        "sample_measurements": False,
+        "preferred_styles": [],
+        "model_pick_count": 0,
+        "shared_style_count": 0,
+        "evaluated_count": len(products),
+    }
     for product in products:
         product.shared_styles = []
+        product.style_labels = [style.name for style in product.get_styles()]
+        product.model_ranked = False
+    if preview_style is not None:
+        preview_preferences = [
+            style
+            for style in Style.objects.all()
+            if slugify(style.name) == preview_style and preview_style in STYLE_SLUGS
+        ]
+        if not preview_preferences:
+            result.update(
+                reason="invalid_preview",
+                message="Choose one of the six available styles to preview recommendations.",
+            )
+            return result
+        use_saved_measurements = (
+            customer is not None
+            and customer.height is not None
+            and customer.weight is not None
+            and 140 <= float(customer.height) <= 210
+            and 35 <= float(customer.weight) <= 160
+        )
+        customer = SimpleNamespace(
+            height=customer.height if use_saved_measurements else 172,
+            weight=customer.weight if use_saved_measurements else 65,
+            get_styles=lambda: preview_preferences,
+        )
+        result.update(
+            preview=True,
+            preview_style=preview_style,
+            sample_measurements=not use_saved_measurements,
+            preferred_styles=[style.name for style in preview_preferences],
+        )
     if not products:
         result.update(
             reason="no_stock",
@@ -146,6 +191,7 @@ def recommend_products(customer, queryset=None):
         )
         return result
     preferences = list(customer.get_styles())
+    result["preferred_styles"] = [style.name for style in preferences]
     if customer.height is None or customer.weight is None or not preferences:
         result.update(
             reason="incomplete_profile",
@@ -201,14 +247,19 @@ def recommend_products(customer, queryset=None):
             raise ValueError("Unexpected prediction output.")
         for product, score in zip(products, scores):
             product.recommendation_score = int(score)
-
+            product.model_ranked = True
             product.shared_styles = [
                 style.name
                 for style in product.get_styles()
                 if slugify(style.name) in customer_styles
             ]
         products.sort(key=lambda p: (-p.recommendation_score, p.pk))
+        for rank, product in enumerate(products, start=1):
+            product.recommendation_rank = rank
     except Exception:
+        for product in products:
+            product.model_ranked = False
+            product.shared_styles = []
         result.update(
             reason="model_error",
             message="Curated selection — personalisation is temporarily unavailable. You can keep shopping and try again later.",
@@ -217,9 +268,11 @@ def recommend_products(customer, queryset=None):
     result.update(
         products=products,
         personalised=True,
+        model_pick_count=sum(p.recommendation_score for p in products),
+        shared_style_count=sum(bool(p.shared_styles) for p in products),
         reason="model_ranked",
-        message="Using your saved profile and "
+        message=("Previewing " if result["preview"] else "Using your saved ")
         + " / ".join(style.name for style in preferences)
-        + " preferences. Recommendations help discovery; they do not establish garment fit or a correct size.",
+        + " preferences. The trained model brings predicted relevant pieces to the front of your selection.",
     )
     return result
