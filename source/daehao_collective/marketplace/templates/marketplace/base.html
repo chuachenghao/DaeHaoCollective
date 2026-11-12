@@ -12,9 +12,6 @@
     </head>
     <body>
         <a class="skip-link" href="#main-content">Skip to content</a>
-        <div class="announcement">
-            Independent labels. One considered wardrobe.
-        </div>
         <header class="site-header">
             <div class="header-main container">
                 <a class="header-help" href="{% url 'help' %}">Help</a>
@@ -82,31 +79,6 @@
             {% block content %}
             {% endblock %}
         </main>
-        <footer class="site-footer">
-            <div class="container footer-main">
-                <div>
-                    <a class="footer-wordmark" href="{% url 'home' %}">{{ site_name }}</a>
-                    <p>Clothing with a point of view.<br>Independent labels, together.</p>
-                </div>
-                <div class="footer-links">
-                    <a href="{% url 'about' %}">About {{ site_name }}</a>
-                    <a href="{% url 'help' %}">Help & orders</a>
-                    <a href="{% url 'seller_register' %}">Partner with us</a>
-                    <a href="{% url 'operations_login' %}">Operations sign-in</a>
-                </div>
-                <div class="footer-note">
-                    A considered wardrobe.
-                    <br>
-                    <span>IS2108 demonstration project</span>
-                    <br>
-                    <span>All prices in SGD. No real payments.</span>
-                </div>
-            </div>
-            <div class="container footer-bottom">
-                <span>© {{ site_name }} 2026</span>
-                <span>Independent by nature.</span>
-            </div>
-        </footer>
         {% block extra_scripts %}
         {% endblock %}
     </body>
