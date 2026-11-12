@@ -78,7 +78,7 @@ def review_details(customer, address):
                 str(product.seller.commission_rate),
             ]
         )
-    data = {
+    return {
         "customer": customer.pk,
         "items": rows,
         "address": [
@@ -90,13 +90,13 @@ def review_details(customer, address):
             address.country,
         ],
     }
-    return data
 
 
 @transaction.atomic
 def add_to_cart(customer, variant_id, quantity):
     if not isinstance(quantity, int) or quantity < 1:
         raise ValidationError("Enter a positive whole-number quantity.")
+    # Start a SQLite write before reading the cart to keep concurrent changes safe.
     Cart.objects.filter(customer_id=customer.pk).update(updated_at=F("updated_at"))
     cart = cart_for(customer)
     variant = ProductVariant.objects.select_related("product__seller__account").get(
@@ -125,19 +125,18 @@ def update_cart_item(customer, item_id, quantity):
         )
     Cart.objects.filter(customer_id=customer.pk).update(updated_at=F("updated_at"))
     cart = cart_for(customer)
-    item = cart.items.select_related("variant__product__seller__account").get(
-        pk=item_id
-    )
+    item = cart.items.select_related("variant__product__seller__account").get(pk=item_id)
     if quantity == 0:
         item.delete()
         return
-    if (
-        quantity < 1
-        or not item.variant.available()
-        or quantity > item.variant.stock_quantity
-    ):
+    if not item.variant.available():
         raise ValidationError(
-            "Choose a positive whole-number quantity within the current stock, or remove this item."
+            "This size and colour is currently unavailable. Remove it to continue."
+        )
+    if quantity > item.variant.stock_quantity:
+        raise ValidationError(
+            f"Only {item.variant.stock_quantity} units are available for this size and colour. "
+            "Reduce the quantity and try again."
         )
     item.quantity = quantity
     item.save(update_fields=["quantity"])
@@ -216,6 +215,7 @@ def adjust_stock(variant_id, delta):
 
 @transaction.atomic
 def advance_fulfilment(portion_id, expected_status, target_status):
+    # Fulfilment and cancellation must update the same order one at a time.
     Order.objects.filter(
         pk__in=SellerOrder.objects.filter(pk=portion_id).values("order_id")
     ).update(order_status=F("order_status"))

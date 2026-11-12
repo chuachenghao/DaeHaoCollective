@@ -16,7 +16,7 @@ from django.core.paginator import Paginator
 from django.db import IntegrityError, transaction
 from django.db.models import F, Q
 from django.db.models.deletion import ProtectedError
-from django.http import Http404, HttpResponse
+from django.http import Http404, HttpResponse, HttpResponseNotAllowed
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils.http import url_has_allowed_host_and_scheme
@@ -142,9 +142,7 @@ def register(request, seller=False):
 
 def logout(request):
     if request.method != "POST":
-        response = HttpResponse(status=405)
-        response["Allow"] = "POST"
-        return response
+        return HttpResponseNotAllowed(["POST"])
 
     auth_logout(request)
     messages.success(request, "You have signed out.")
@@ -206,7 +204,16 @@ def profile(request):
             request, "Your optional personalisation profile has been saved."
         )
         return redirect("for_you")
-    return render(request, "marketplace/profile.html", {"form": form})
+    from .sizing import predict_size
+
+    customer = Customer.objects.only("height", "weight").get(
+        pk=request.user.customer.pk
+    )
+    return render(
+        request,
+        "marketplace/profile.html",
+        {"form": form, "size_guidance": predict_size(customer.height, customer.weight)},
+    )
 
 
 def clear_profile(request):
@@ -219,7 +226,8 @@ def clear_profile(request):
             customer = request.user.customer
             customer.height = None
             customer.weight = None
-            customer.save(update_fields=["height", "weight"])
+            customer.gender = ""
+            customer.save(update_fields=["height", "weight", "gender"])
             CustomerStylePreference.objects.filter(customer=customer).delete()
         messages.success(
             request,
@@ -231,7 +239,7 @@ def clear_profile(request):
         "marketplace/confirm.html",
         {
             "title": "Clear personalisation?",
-            "description": "This removes your saved height, weight and style preferences. Your bag, addresses and orders will remain.",
+            "description": "This removes your saved gender, height, weight and style preferences. Your bag, addresses and orders will remain.",
             "button_label": "Clear personalisation",
             "back_url": reverse("profile"),
         },
@@ -329,9 +337,7 @@ def cart_add(request, pk):
     if access is not None:
         return access
     if request.method != "POST":
-        response = HttpResponse(status=405)
-        response["Allow"] = "POST"
-        return response
+        return HttpResponseNotAllowed(["POST"])
 
     product = get_object_or_404(active_products(), pk=pk)
     form = VariantSelectionForm(request.POST)
@@ -371,9 +377,7 @@ def cart_update(request, pk):
     if access is not None:
         return access
     if request.method != "POST":
-        response = HttpResponse(status=405)
-        response["Allow"] = "POST"
-        return response
+        return HttpResponseNotAllowed(["POST"])
 
     get_object_or_404(CartItem, pk=pk, cart__customer=request.user.customer)
     if request.POST.get("action") == "remove":
@@ -570,9 +574,7 @@ def order_buy_again(request, pk):
     if access is not None:
         return access
     if request.method != "POST":
-        response = HttpResponse(status=405)
-        response["Allow"] = "POST"
-        return response
+        return HttpResponseNotAllowed(["POST"])
 
     order = owned_order(request, pk)
     added, skipped = [], []
@@ -621,7 +623,7 @@ def public_sellers():
     return Seller.objects.filter(approval_status="APPROVED")
 
 
-def _recommendations(request, queryset=None):
+def _recommendations(request, queryset=None, preview_style=None, preview_collection=None):
     from .recommendations import recommend_products
 
     customer = (
@@ -629,7 +631,12 @@ def _recommendations(request, queryset=None):
         if request.user.is_authenticated
         else None
     )
-    return recommend_products(customer, queryset=queryset)
+    return recommend_products(
+        customer,
+        queryset=queryset,
+        preview_style=preview_style,
+        preview_collection=preview_collection,
+    )
 
 
 def home(request):
@@ -639,18 +646,31 @@ def home(request):
         "marketplace/home.html",
         {
             "selection": selection,
-            "products": list(selection["products"])[:3],
+            "products": selection["products"][:3],
             "active_nav": "home",
         },
     )
 
 
-def filter_catalogue(request, queryset):
+def filter_catalogue(request, queryset, available_only=False):
+    from .recommendations import COLLECTION_LABELS, filter_product_collection
+
     query = request.GET.get("q", "").strip()
     selected = {}
     errors = []
     for field in ["category", "style", "seller", "size", "colour"]:
         selected[field] = request.GET.getlist(field)
+    selected_collection = "ALL"
+    if not available_only:
+        selected_collection = request.GET.get("collection", "ALL") or "ALL"
+        if (
+            selected_collection not in COLLECTION_LABELS
+            or len(request.GET.getlist("collection")) > 1
+        ):
+            errors.append("Choose a single available clothing collection.")
+            selected_collection = "ALL"
+        else:
+            queryset = filter_product_collection(queryset, selected_collection)
 
     if query:
         queryset = queryset.filter(
@@ -664,14 +684,12 @@ def filter_catalogue(request, queryset):
         ("seller", "seller_id__in"),
     ]:
         if selected[key]:
-            valid_ids = [
-                int(value)
-                for value in selected[key]
-                if value.isascii()
-                and value.isdecimal()
-                and len(value) <= 19
-                and 0 < int(value) <= 9223372036854775807
-            ]
+            valid_ids = []
+            for value in selected[key]:
+                if value.isascii() and value.isdecimal() and len(value) <= 19:
+                    number = int(value)
+                    if 0 < number <= 9223372036854775807:
+                        valid_ids.append(number)
             queryset = queryset.filter(**{lookup: valid_ids})
 
     price_values = {}
@@ -685,20 +703,27 @@ def filter_catalogue(request, queryset):
                     raise InvalidOperation
                 queryset = queryset.filter(**{lookup: price})
             except (InvalidOperation, ValueError):
-                errors.append("Enter a valid non-negative price.")
+                error = "Enter a valid non-negative price."
+                if error not in errors:
+                    errors.append(error)
     if not errors and all(price_values.values()):
         if Decimal(price_values["min_price"]) > Decimal(price_values["max_price"]):
             errors.append("The minimum price must not exceed the maximum price.")
     if errors:
         queryset = queryset.none()
 
-    if selected["size"] or selected["colour"] or request.GET.get("stock") == "1":
+    if (
+        selected["size"]
+        or selected["colour"]
+        or request.GET.get("stock") == "1"
+        or available_only
+    ):
         variants = ProductVariant.objects.all()
         if selected["size"]:
             variants = variants.filter(size__in=selected["size"])
         if selected["colour"]:
             variants = variants.filter(colour__in=selected["colour"])
-        if request.GET.get("stock") == "1":
+        if request.GET.get("stock") == "1" or available_only:
             variants = variants.filter(stock_quantity__gt=0)
         queryset = queryset.filter(pk__in=variants.values("product_id"))
 
@@ -706,38 +731,130 @@ def filter_catalogue(request, queryset):
     return queryset, {
         "query": query,
         "selected": selected,
-        "filter_errors": list(dict.fromkeys(errors)),
+        "filter_errors": errors,
         "min_price": price_values["min_price"],
         "max_price": price_values["max_price"],
         "stock_only": request.GET.get("stock") == "1",
+        "selected_collection": selected_collection,
+        "collection_choices": list(COLLECTION_LABELS.items()),
     }
 
 
+def catalogue_url(path, query_params, remove=()):
+    params = query_params.copy()
+    for name in remove:
+        params.pop(name, None)
+    query = params.urlencode()
+    if query:
+        return path + "?" + query
+    return path
+
+
 def catalogue_context(request, queryset, personalised=False):
-    queryset, context = filter_catalogue(request, queryset)
-    sort = request.GET.get("sort", "recommended" if personalised else "name")
+    queryset, context = filter_catalogue(request, queryset, available_only=personalised)
+    sort = request.GET.get("sort", "")
     ordering = {
         "name": ("name", "pk"),
         "price_asc": ("price", "name", "pk"),
         "price_desc": ("-price", "name", "pk"),
     }
     selection = None
+    comparison_products = []
+    ranked_examples = []
+    preview_style = ""
+    preview_collection = None
     if personalised:
-        selection = _recommendations(request, queryset)
+        from .recommendations import COLLECTION_LABELS, STYLE_SLUGS
+
+        preview_style = request.GET.get("preview_style", "")
+        if preview_style and (
+            preview_style not in STYLE_SLUGS
+            or len(request.GET.getlist("preview_style")) != 1
+        ):
+            context["filter_errors"].append(
+                "Choose a single available style from the preview buttons."
+            )
+            preview_style = ""
+        raw_collection = request.GET.get("preview_collection", "")
+        if "preview_collection" in request.GET and (
+            len(request.GET.getlist("preview_collection")) != 1
+            or (raw_collection and raw_collection not in COLLECTION_LABELS)
+        ):
+            context["filter_errors"].append(
+                "Choose a single available clothing selection."
+            )
+        else:
+            preview_collection = raw_collection or None
+        selection = _recommendations(
+            request,
+            queryset,
+            preview_style=preview_style or None,
+            preview_collection=preview_collection,
+        )
+        if sort not in ordering:
+            sort = "recommended" if selection["personalised"] else "name"
+        alphabetical_products = sorted(
+            selection["products"], key=lambda product: (product.name.lower(), product.pk)
+        )
         if sort == "recommended":
             products = selection["products"]
         else:
-            products = sorted(
-                selection["products"], key=lambda p: (p.name.lower(), p.pk)
-            )
+            products = alphabetical_products.copy()
             if sort in ["price_asc", "price_desc"]:
-                products.sort(key=lambda p: p.price, reverse=sort == "price_desc")
+                products.sort(key=lambda product: product.price, reverse=sort == "price_desc")
+        if selection["personalised"]:
+            comparison_products = alphabetical_products[:3]
+            ranked_examples = selection["products"][:3]
     else:
-        products = queryset.order_by(*ordering.get(sort, ordering["name"]))
+        if sort not in ordering:
+            sort = "name"
+        products = queryset.order_by(*ordering[sort])
 
     page = Paginator(products, 12).get_page(request.GET.get("page"))
     query_params = request.GET.copy()
     query_params.pop("page", None)
+    if personalised:
+        if not preview_style:
+            query_params.pop("preview_style", None)
+        query_params.pop("collection", None)
+        if preview_collection is None:
+            query_params.pop("preview_collection", None)
+    preserved_previews = {}
+    if preview_style:
+        preserved_previews["preview_style"] = preview_style
+    if preview_collection is not None:
+        preserved_previews["preview_collection"] = preview_collection
+    clear_filters_url = request.path
+    if preserved_previews:
+        clear_filters_url += "?" + urlencode(preserved_previews)
+    saved_collection_url = catalogue_url(request.path, query_params, ["preview_collection"])
+    saved_style_url = catalogue_url(request.path, query_params, ["preview_style"])
+    comparison_params = query_params.copy()
+    comparison_params.pop("preview_style", None)
+    comparison_params.pop("preview_collection", None)
+    if selection:
+        comparison_params["collection"] = selection["collection"]
+    comparison_params["sort"] = "name"
+    comparison_params["stock"] = "1"
+    catalogue_comparison_url = catalogue_url(reverse("catalogue"), comparison_params)
+    style_previews = []
+    if personalised:
+        for slug in STYLE_SLUGS:
+            preview_params = query_params.copy()
+            preview_params["preview_style"] = slug
+            preview_params["sort"] = "recommended"
+            style_previews.append(
+                {
+                    "slug": slug,
+                    "name": slug.title(),
+                    "url": catalogue_url(request.path, preview_params) + "#clothing-results",
+                }
+            )
+    collection_hidden_fields = []
+    for name, values in query_params.lists():
+        if name != "preview_collection":
+            for value in values:
+                collection_hidden_fields.append((name, value))
     active_variants = ProductVariant.objects.filter(product__in=public_products())
     context.update(
         {
@@ -745,6 +862,7 @@ def catalogue_context(request, queryset, personalised=False):
             "products": page.object_list,
             "product_count": page.paginator.count,
             "query_params": query_params.urlencode(),
+            "pagination_anchor": "#clothing-results",
             "sort": sort,
             "selection": selection,
             "categories": Category.objects.all(),
@@ -769,9 +887,19 @@ def catalogue_context(request, queryset, personalised=False):
                     "min_price",
                     "max_price",
                 ]
-            ),
+            ) or (not personalised and context["selected_collection"] != "ALL"),
             "active_nav": "for_you" if personalised else "shop",
             "is_for_you": personalised,
+            "preview_style": preview_style,
+            "preview_collection": preview_collection,
+            "style_previews": style_previews,
+            "collection_hidden_fields": collection_hidden_fields,
+            "saved_collection_url": saved_collection_url,
+            "saved_style_url": saved_style_url,
+            "clear_filters_url": clear_filters_url,
+            "catalogue_comparison_url": catalogue_comparison_url,
+            "comparison_products": comparison_products,
+            "ranked_examples": ranked_examples,
         }
     )
     return context
@@ -792,8 +920,8 @@ def for_you(request):
         {
             "page_title": (
                 "Selected for your preferences"
-                if selection["personalised"]
-                else "A little inspiration"
+                if selection["personalised"] and not selection["preview"]
+                else "Find your style"
             ),
             "eyebrow": "Personal discovery",
             "active_nav": "for_you",
@@ -843,6 +971,16 @@ def product_detail(request, pk):
     selected_variant = next(
         (v for v in variants if v.size == size and v.colour == colour), None
     )
+    from .sizing import product_size_guidance
+
+    customer = (
+        getattr(request.user, "customer", None)
+        if request.user.is_authenticated
+        else None
+    )
+    height = customer.height if customer is not None else None
+    weight = customer.weight if customer is not None else None
+    size_guidance = product_size_guidance(product, height, weight, colour=colour)
     return render(
         request,
         "marketplace/product_detail.html",
@@ -856,6 +994,8 @@ def product_detail(request, pk):
             "selected_variant": selected_variant,
             "selection_made": bool(size and colour),
             "quantity": request.GET.get("quantity", "1"),
+            "size_guidance": size_guidance,
+            "sizing_profile_available": height is not None and weight is not None,
             "active_nav": "shop",
         },
     )
@@ -1257,6 +1397,7 @@ def product_editor(request, pk=None, staff=False):
                         "name",
                         "description",
                         "category",
+                        "collection",
                         "price",
                         "image",
                     ]
@@ -1976,9 +2117,7 @@ def operations_customer_detail(request, pk):
 
     customer_account = get_object_or_404(Account, pk=pk, role="CUSTOMER")
     if request.method == "POST":
-        response = HttpResponse(status=405)
-        response["Allow"] = "GET"
-        return response
+        return HttpResponseNotAllowed(["GET"])
     orders = Order.objects.filter(customer__account=customer_account)
     return workspace(
         request,
@@ -1993,5 +2132,10 @@ def operations_model(request):
         return access
 
     from .recommendations import model_readiness
+    from .sizing import size_model_readiness
 
-    return workspace(request, "model", {"readiness": model_readiness()})
+    return workspace(
+        request,
+        "model",
+        {"readiness": model_readiness(), "size_readiness": size_model_readiness()},
+    )

@@ -76,5 +76,131 @@
     "splitter": "best",
     "max_depth": 10
   },
-  "ranking": "Predicted class 1 before class 0, then stable product id for ties"
+  "ranking": "Predicted class 1 before class 0, then stable product id for ties",
+  "sizing": {
+    "schema_version": 1,
+    "algorithm": "DecisionTreeClassifier",
+    "source": "Height and weight copied from synthetic_pairs.csv; all size labels are invented for this demonstration.",
+    "dataset": "synthetic_sizes.csv",
+    "dataset_rows": 3000,
+    "training_rows": 2400,
+    "validation_rows": 600,
+    "split": "Stratified 80% training / 20% held-out validation",
+    "random_seed": 2108,
+    "target": "Invented starting size estimate; not a retailer size chart or physical fit prediction",
+    "feature_names": [
+      "height_cm",
+      "weight_kg"
+    ],
+    "labels": [
+      "XS",
+      "S",
+      "M",
+      "L",
+      "XL",
+      "XXL"
+    ],
+    "supported_ranges": {
+      "height_cm": [
+        140,
+        210
+      ],
+      "weight_kg": [
+        35,
+        160
+      ]
+    },
+    "reference_rule": {
+      "formula": "reference_weight = weight_kg - 0.45 * (height_cm - 170)",
+      "upper_boundaries_exclusive": [
+        45,
+        58,
+        72,
+        86,
+        105
+      ],
+      "ordered_labels": [
+        "XS",
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+      ],
+      "note": "Fictional boundaries invented for the demo; no real garment measurements or customer fit outcomes were used."
+    },
+    "parameters": {
+      "criterion": "gini",
+      "splitter": "best",
+      "max_depth": 10,
+      "min_samples_leaf": 3,
+      "random_state": 2108
+    },
+    "feature_importance": {
+      "height_cm": 0.32444,
+      "weight_kg": 0.67556
+    },
+    "metrics": {
+      "accuracy": 0.946667,
+      "confusion_matrix": [
+        [
+          50,
+          6,
+          0,
+          0,
+          0,
+          0
+        ],
+        [
+          2,
+          55,
+          6,
+          0,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          61,
+          3,
+          0,
+          0
+        ],
+        [
+          0,
+          0,
+          2,
+          61,
+          2,
+          0
+        ],
+        [
+          0,
+          0,
+          0,
+          4,
+          89,
+          5
+        ],
+        [
+          0,
+          0,
+          0,
+          0,
+          2,
+          252
+        ]
+      ],
+      "confusion_matrix_labels": [
+        "XS",
+        "S",
+        "M",
+        "L",
+        "XL",
+        "XXL"
+      ]
+    },
+    "metric_note": "Held-out synthetic accuracy measures recovery of invented labels only. It does not measure real size accuracy or guarantee fit."
+  }
 }

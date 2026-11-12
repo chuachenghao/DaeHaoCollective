@@ -805,6 +805,7 @@ class ManagementTests(TestCase):
                     "name": self.product.name,
                     "description": self.product.description,
                     "category": self.category.pk,
+                    "collection": self.product.collection,
                     "price": "65.00",
                     "styles": [self.style.pk],
                     "image": SimpleUploadedFile(
@@ -1048,7 +1049,7 @@ class RecommendationTests(TestCase):
 
 
 class UMLModelTests(TestCase):
-    def test_uml_models_have_exactly_the_documented_fields(self):
+    def test_uml_models_have_exactly_the_documented_fields_and_explicit_extensions(self):
         expected = {
             Account: "accountID username password email role",
             Admin: "adminID employee_name account",
@@ -1086,6 +1087,8 @@ class UMLModelTests(TestCase):
                 "seller_order variant"
             ),
         }
+        # Gender and garment collection are explicitly requested UML extensions.
+        allowed_extensions = {Customer: {"gender"}, Product: {"collection"}}
         for model, fields in expected.items():
             with self.subTest(model=model.__name__):
                 actual = {
@@ -1093,7 +1096,7 @@ class UMLModelTests(TestCase):
                     for field in model._meta.get_fields()
                     if field.concrete or (field.many_to_many and not field.auto_created)
                 }
-                self.assertEqual(actual, set(fields.split()))
+                self.assertEqual(actual, set(fields.split()) | allowed_extensions.get(model, set()))
 
     def test_uml_class_names_and_primary_key_fields(self):
         expected = {
@@ -1131,7 +1134,12 @@ class UMLModelTests(TestCase):
                 "role": models.CharField,
             },
             Admin: {"employee_name": models.CharField},
-            Customer: {"height": models.DecimalField, "weight": models.DecimalField},
+            Customer: {
+                "height": models.DecimalField,
+                "weight": models.DecimalField,
+                # Explicit profile extension requested after the original UML.
+                "gender": models.CharField,
+            },
             Seller: {
                 "store_name": models.CharField,
                 "store_description": models.TextField,
@@ -1145,6 +1153,8 @@ class UMLModelTests(TestCase):
             Product: {
                 "name": models.CharField,
                 "description": models.TextField,
+                # Explicit collection tagging extension for gender-aware discovery.
+                "collection": models.CharField,
                 "image": models.ImageField,
                 "price": models.DecimalField,
                 "approval_status": models.CharField,

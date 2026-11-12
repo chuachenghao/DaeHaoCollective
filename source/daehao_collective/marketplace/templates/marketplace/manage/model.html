@@ -10,6 +10,25 @@
         measurements are never displayed.</p>
         <a href="{% url 'operations_model' %}" class="button-secondary">Check artifact again</a>
     </section>
+    <section class="card">
+        <h2>Size model · {% if size_readiness.ready %}Ready / synthetic demonstration{% else %}Size estimation unavailable{% endif %}</h2>
+        <p>{{ size_readiness.message }}</p>
+        <p class="muted">Estimates use saved height and weight. Inventory availability is checked separately against the estimated size; a sold-out estimate is not replaced with a different size.</p>
+        {% if size_readiness.metadata %}
+            <details class="model-explainer">
+                <summary>Size model training and validation</summary>
+                <dl>
+                    {% for key, value in size_readiness.metadata.items %}
+                        <dt><strong>{{ key }}</strong></dt>
+                        <dd>{{ value }}</dd>
+                    {% endfor %}
+                </dl>
+            </details>
+        {% else %}
+            <p>No trusted size model metadata is available.</p>
+        {% endif %}
+        <p class="muted">Synthetic validation describes the example dataset; it does not establish real-world sizing accuracy or guarantee physical fit.</p>
+    </section>
     {% if readiness.unsupported_categories %}
         <p class="notice">Unsupported categories: {{ readiness.unsupported_categories|join:", " }}</p>
     {% endif %}

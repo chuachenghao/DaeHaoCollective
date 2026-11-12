@@ -4,6 +4,9 @@ from django.conf import settings
 from django.core.files import File
 from django.core.management.base import BaseCommand
 from django.db import transaction
+from django.utils.text import slugify
+
+from marketplace.demo_catalogue import ADDITIONAL_PRODUCTS, DEMO_COLLECTIONS, detailed_description
 
 from marketplace.models import (
     Account,
@@ -214,6 +217,15 @@ PRODUCT_DATA = [
         ["Black", "Cream"],
     ),
 ]
+PRODUCT_DETAILS = {}
+for (
+    seller_key, name, price, category, style, illustration, sku_prefix, colours,
+    photo_slug, construction, material, care,
+) in ADDITIONAL_PRODUCTS:
+    PRODUCT_DATA.append(
+        (seller_key, name, price, category, [style], illustration, sku_prefix, colours)
+    )
+    PRODUCT_DETAILS[sku_prefix] = (photo_slug, construction, material, care)
 COLOUR_CODES = {
     "Navy": "NV",
     "Cream": "CR",
@@ -233,27 +245,46 @@ def demo_account(username, email, role):
     return create_account(username, email, DEMO_PASSWORD, role)
 
 
-def save_demo_image(product, illustration):
-    filename = illustration + ".svg"
-    source = (
+def save_demo_image(product, illustration, photo_slug=None):
+    """Upgrade seed illustrations when photographs exist, preserving user uploads."""
+    legacy_images = {
+        "products/demo/" + name + ".svg"
+        for name in ["shirt", "knit", "coat", "trousers", "dress"]
+    }
+    image_root = (
         settings.BASE_DIR
         / "marketplace"
         / "static"
         / "marketplace"
         / "images"
-        / filename
     )
-    image_name = "products/demo/" + filename
+    photo_filename = (photo_slug or slugify(product.name)) + ".webp"
+    photo_source = image_root / "catalogue" / photo_filename
+    if photo_source.is_file():
+        source = photo_source
+        image_name = "products/demo/catalogue/" + photo_filename
+    else:
+        source = image_root / (illustration + ".svg")
+        image_name = "products/demo/" + illustration + ".svg"
+
+    current_image = product.image.name
+    if current_image and current_image not in legacy_images and current_image != image_name:
+        # A seller's own upload remains intact, even if the file is unavailable.
+        return False
     storage = product.image.storage
-    if not storage.exists(image_name):
+    image_exists = storage.exists(image_name)
+    if current_image == image_name and image_exists:
+        return False
+    if not image_exists:
         with source.open("rb") as image:
             image_name = storage.save(image_name, File(image))
     product.image.name = image_name
     product.save(update_fields=["image"])
+    return True
 
 
 class Command(BaseCommand):
-    help = "Add fictional DaeHao Collective accounts, 18 public products, one pending listing and a SGD 220 demo bag."
+    help = "Add fictional accounts, 42 public products across six styles, one pending listing and a SGD 220 demo bag."
 
     @transaction.atomic
     def handle(self, *args, **options):
@@ -343,6 +374,7 @@ class Command(BaseCommand):
             )
 
         created_products = 0
+        updated_images = 0
         products = {}
         for (
             seller_key,
@@ -354,37 +386,46 @@ class Command(BaseCommand):
             sku_prefix,
             colours,
         ) in PRODUCT_DATA:
+            details = PRODUCT_DETAILS.get(sku_prefix)
+            store_name = sellers[seller_key].store_name
+            if details:
+                photo_slug, construction, material, care = details
+                description = detailed_description(name, store_name, construction, material, care)
+            else:
+                photo_slug = slugify(name)
+                material = "Cotton blend. See the care label on the garment."
+                if name == "Linen day shirt":
+                    material = "Linen and cotton blend."
+                description = (
+                    f"{name} from {store_name}. A considered piece for everyday dressing, with an easy silhouette and thoughtful finishing.\n\n"
+                    f"{material}\n\n"
+                    "Gentle cold wash with similar colours. Air dry. Follow the garment care label.\n\n"
+                    "S, M and L are retailer size labels. Check the garment measurements with the retailer; recommendations do not guarantee fit."
+                )
+
+            # The SKU still identifies a demo garment after a seller renames it.
             stable_sku = f"{sku_prefix}-{COLOUR_CODES[colours[0]]}-S"
-            existing = Product.objects.filter(variants__sku=stable_sku).first()
-            if existing is not None:
-                products[name] = existing
-                continue
-            product, is_new = Product.objects.get_or_create(
-                seller=sellers[seller_key],
-                name=name,
-                defaults={
-                    "category": categories[category],
-                    "price": Decimal(price),
-                    "description": (
-                        f"{name} from {sellers[seller_key].store_name}. A considered piece for everyday dressing, with an easy silhouette and thoughtful finishing.\n\n"
-                        + (
-                            "Linen and cotton blend."
-                            if name == "Linen day shirt"
-                            else "Cotton blend. See the care label on the garment."
-                        )
-                        + "\n\nGentle cold wash with similar colours. Air dry. Follow the garment care label."
-                        + "\n\nS, M and L are retailer size labels. Check the garment measurements with the retailer; recommendations do not guarantee fit."
-                    ),
-                    "approval_status": "APPROVED",
-                    "is_active": True,
-                    "reviewed_by": staff_profile,
-                },
-            )
+            product = Product.objects.filter(variants__sku=stable_sku).first()
+            is_new = False
+            if product is None:
+                product, is_new = Product.objects.get_or_create(
+                    seller=sellers[seller_key],
+                    name=name,
+                    defaults={
+                        "category": categories[category],
+                        "collection": DEMO_COLLECTIONS[sku_prefix],
+                        "price": Decimal(price),
+                        "description": description,
+                        "approval_status": "APPROVED",
+                        "is_active": True,
+                        "reviewed_by": staff_profile,
+                    },
+                )
             products[name] = product
+            updated_images += save_demo_image(product, illustration, photo_slug)
             if not is_new:
                 continue
             created_products += 1
-            save_demo_image(product, illustration)
             for tag in tags:
                 ProductStyle.objects.get_or_create(product=product, style=styles[tag])
             for colour in colours:
@@ -451,7 +492,7 @@ class Command(BaseCommand):
                 CartItem.objects.create(cart=cart, variant=trouser, quantity=1)
         self.stdout.write(
             self.style.SUCCESS(
-                f"Demo ready: added {created_products} public products. Existing records were preserved."
+                f"Demo ready: added {created_products} public products; updated {updated_images} seed images. Existing edits and bags were preserved."
             )
         )
         self.stdout.write(

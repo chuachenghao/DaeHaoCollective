@@ -2,14 +2,14 @@
 {% load static %}
 {% block title %}Shopping bag · {{ site_name }}{% endblock %}
 {% block content %}
-    <section class="container page">
+    <section class="container page bag-page">
         <p class="eyebrow">YOUR SELECTION</p>
         <h1>Shopping bag</h1>
         {% if items %}
             <div class="two-column purchase-layout">
                 <div>
                     {% for group in groups %}
-                        <section class="retailer-group card">
+                        <section class="retailer-group">
                             <h2>{{ group.seller.store_name }}</h2>
                             {% for item in group.items %}
                                 <article class="bag-item">
@@ -21,33 +21,51 @@
                                         {% endif %}
                                     </div>
                                     <div>
-                                        <h3>{{ item.variant.product.name }}</h3>
-                                        <p>{{ item.variant.colour }} / {{ item.variant.size }} · SGD
-                                        {{ item.variant.product.price }} each</p>
+                                        <h3>
+                                            {% if item.variant.product.is_purchasable %}
+                                                <a href="{% url 'product_detail' item.variant.product.pk %}">{{ item.variant.product.name }}</a>
+                                            {% else %}
+                                                {{ item.variant.product.name }}
+                                            {% endif %}
+                                        </h3>
+                                        <p>{{ item.variant.colour }} / {{ item.variant.size }} · SGD {{ item.variant.product.price|floatformat:2 }} each</p>
+                                        <p class="bag-stock">
+                                            {% if item.variant.available %}
+                                                <strong>{{ item.variant.stock_quantity }} in stock</strong> · Max {{ item.variant.stock_quantity }}
+                                            {% elif item.variant.stock_quantity %}
+                                                <strong>{{ item.variant.stock_quantity }} in stock</strong> · Unavailable · Max 0
+                                            {% else %}
+                                                <strong>Sold out</strong> · Max 0
+                                            {% endif %}
+                                        </p>
                                         {% if item.problem %}
                                             <p class="notice error">{{ item.problem }}</p>
                                         {% endif %}
                                         <form action="{% url 'cart_update' item.pk %}" method="post" class="quantity-form">
                                             {% csrf_token %}
                                             <label for="quantity-{{ item.pk }}">Quantity</label>
-                                            <input id="quantity-{{ item.pk }}" type="number" name="quantity" min="1" max="10000" value="{{ item.quantity }}" required>
-                                            <button class="button button-secondary" name="action" value="update">Update</button>
+                                            <input id="quantity-{{ item.pk }}" type="number" name="quantity"
+                                                   min="1" max="{{ item.variant.stock_quantity }}" step="1"
+                                                   inputmode="numeric" value="{{ item.quantity }}"
+                                                   aria-describedby="quantity-help-{{ item.pk }}" required
+                                                   {% if not item.variant.available %}disabled{% endif %}>
+                                            <button class="button button-secondary" name="action" value="update"
+                                                    {% if not item.variant.available %}disabled{% endif %}>Update</button>
                                             <button class="text-link" name="action" value="remove" formnovalidate>Remove</button>
+                                            <p class="help-text" id="quantity-help-{{ item.pk }}">Type a number or use the arrows.</p>
                                         </form>
-                                        <p><strong>SGD {{ item.subtotal|floatformat:2 }}</strong></p>
+                                        <p class="bag-item-total"><strong>SGD {{ item.subtotal|floatformat:2 }}</strong></p>
                                         {% if item.variant.product.is_purchasable %}
-                                            <a href="{% url 'product_detail' item.variant.product.pk %}">Choose
-                                            another size or colour →</a>
+                                            <a href="{% url 'product_detail' item.variant.product.pk %}">Choose another size or colour →</a>
                                         {% endif %}
                                     </div>
                                 </article>
                             {% endfor %}
-                            <p class="group-subtotal">Retailer subtotal <strong>SGD
-                            {{ group.subtotal|floatformat:2 }}</strong></p>
+                            <p class="group-subtotal">Retailer subtotal <strong>SGD {{ group.subtotal|floatformat:2 }}</strong></p>
                         </section>
                     {% endfor %}
                 </div>
-                <aside class="card order-summary">
+                <aside class="order-summary">
                     <h2>Order summary</h2>
                     <p>{{ units }} units / {{ groups|length }} retailers</p>
                     <dl>
@@ -63,13 +81,12 @@
                     {% else %}
                         <p class="notice error">Update or remove unavailable items before checkout.</p>
                     {% endif %}
-                    <p>Each retailer fulfils its own portion. A bag does not reserve stock; availability is checked
-                    again at checkout.</p>
+                    <p>Each retailer fulfils its own portion. A bag does not reserve stock; availability is checked again at checkout.</p>
                     <a href="{% url 'catalogue' %}">Continue shopping →</a>
                 </aside>
             </div>
         {% else %}
-            <div class="empty-state card">
+            <div class="empty-state">
                 <h2>Your next everyday piece is out there.</h2>
                 <p>Your bag is empty. Discover clothing from independent labels.</p>
                 <a href="{% url 'catalogue' %}" class="button">Explore clothing →</a>

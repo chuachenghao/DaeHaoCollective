@@ -47,7 +47,14 @@
             <tbody>
                 {% for portion in portions %}
                     <tr>
-                        <td>{% if is_operations %}<a href="{% url 'operations_order_detail' portion.order.pk %}">{% else %}<a href="{% url 'seller_order_detail' portion.pk %}">{% endif %}{{ portion.order.reference }}</a><br>{{ portion.order.order_date|date:"d M Y" }}</td>
+                        <td>
+                            {% if is_operations %}
+                                <a href="{% url 'operations_order_detail' portion.order.pk %}">{{ portion.order.reference }}</a>
+                            {% else %}
+                                <a href="{% url 'seller_order_detail' portion.pk %}">{{ portion.order.reference }}</a>
+                            {% endif %}
+                            <br>{{ portion.order.order_date|date:"d M Y" }}
+                        </td>
                         <td>{{ portion.seller.store_name }}</td>
                         <td>{{ portion.get_fulfilment_status_display }}</td>
                         <td>{{ portion.subtotal|floatformat:2 }}</td>

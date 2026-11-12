@@ -5,7 +5,8 @@ from joblib import load
 from django.conf import settings
 from django.utils.text import slugify
 
-from .models import Category, Product, ProductVariant, Style
+from .models import Category, Customer, Product, Style
+from .sizing import predict_size, product_size_guidance
 
 SCHEMA_VERSION = 2
 STYLE_SLUGS = ["minimal", "casual", "workwear", "streetwear", "formal", "vintage"]
@@ -18,6 +19,20 @@ FEATURE_NAMES = (
 )
 MODEL_PATH = settings.BASE_DIR / "ml" / "recommender.joblib"
 METADATA_PATH = settings.BASE_DIR / "ml" / "metadata.json"
+COLLECTION_LABELS = {
+    "ALL": "All clothing",
+    "MEN": "Menswear + unisex",
+    "WOMEN": "Womenswear + unisex",
+    "UNISEX": "Unisex",
+}
+
+
+def filter_product_collection(queryset, collection):
+    if collection in ["MEN", "WOMEN"]:
+        return queryset.filter(collection__in=[collection, "UNISEX"])
+    if collection == "UNISEX":
+        return queryset.filter(collection="UNISEX")
+    return queryset
 
 
 def feature_row(height, weight, customer_styles, product_styles, category):
@@ -114,46 +129,123 @@ def model_readiness():
 def available_products(queryset=None):
     if queryset is None:
         queryset = Product.objects.all()
-    queryset = queryset.filter(
+    return list(queryset.filter(
         is_active=True,
         approval_status="APPROVED",
         seller__approval_status="APPROVED",
-    )
-    products = []
-    for product in queryset:
-        variants = ProductVariant.objects.filter(product=product, stock_quantity__gt=0)
-        for variant in variants:
-            products.append(product)
-            break
-    return products
+        variants__stock_quantity__gt=0,
+    ).distinct())
 
 
-def recommend_products(customer, queryset=None):
+def recommend_products(customer, queryset=None, preview_style=None, preview_collection=None):
+    gender = getattr(customer, "gender", "")
+    gender_choices = dict(Customer.GENDER_CHOICES)
+    if gender not in gender_choices:
+        gender = ""
+    collection = {"MALE": "MEN", "FEMALE": "WOMEN"}.get(gender, "ALL")
+    valid_collection_preview = preview_collection in COLLECTION_LABELS
+    if valid_collection_preview:
+        collection = preview_collection
+    if queryset is None:
+        queryset = Product.objects.all()
+    queryset = filter_product_collection(queryset, collection)
     products = list(available_products(queryset))
-    result = {"products": products, "personalised": False, "reason": "", "message": ""}
+    result = {
+        "products": products,
+        "personalised": False,
+        "reason": "",
+        "message": "",
+        "preview": False,
+        "preview_style": "",
+        "sample_measurements": False,
+        "preferred_styles": [],
+        "model_pick_count": 0,
+        "shared_style_count": 0,
+        "evaluated_count": len(products),
+        "gender": gender,
+        "gender_label": gender_choices[gender],
+        "collection": collection,
+        "collection_label": COLLECTION_LABELS[collection],
+        "collection_preview": valid_collection_preview,
+        "size_guidance": {
+            "ready": False,
+            "size": "",
+            "reason": "missing_measurements",
+            "message": "Add your height and weight to see an estimated size.",
+            "sample_measurements": False,
+        },
+    }
     for product in products:
         product.shared_styles = []
+        product.style_labels = [style.name for style in product.get_styles()]
+        product.model_ranked = False
+        product.size_guidance = result["size_guidance"].copy()
+    if preview_collection is not None and not valid_collection_preview:
+        result.update(
+            reason="invalid_collection_preview",
+            message="Choose one of the available clothing selections to preview.",
+        )
+        return result
+    height = getattr(customer, "height", None)
+    weight = getattr(customer, "weight", None)
+    preferences = []
+    if preview_style is not None:
+        preferences = [
+            style
+            for style in Style.objects.all()
+            if slugify(style.name) == preview_style and preview_style in STYLE_SLUGS
+        ]
+        if not preferences:
+            result.update(
+                reason="invalid_preview",
+                message="Choose one of the six available styles to preview recommendations.",
+            )
+            return result
+        use_saved_measurements = (
+            height is not None
+            and weight is not None
+            and 140 <= float(height) <= 210
+            and 35 <= float(weight) <= 160
+        )
+        # A preview changes local inputs without changing the saved customer.
+        if not use_saved_measurements:
+            height, weight = 172, 65
+        result.update(
+            preview=True,
+            preview_style=preview_style,
+            sample_measurements=not use_saved_measurements,
+            preferred_styles=[style.name for style in preferences],
+        )
+    size_guidance = predict_size(height, weight)
+    size_guidance["sample_measurements"] = result["sample_measurements"]
+    result["size_guidance"] = size_guidance
+    for product in products:
+        product.size_guidance = product_size_guidance(
+            product, height, weight, prediction=size_guidance
+        )
     if not products:
         result.update(
             reason="no_stock",
             message="No available clothing matches these filters. Try broadening your selection.",
         )
         return result
-    if customer is None:
+    if customer is None and not result["preview"]:
         result.update(
             reason="missing_profile",
             message="Curated selection — sign in and add an optional profile for personalised discovery.",
         )
         return result
-    preferences = list(customer.get_styles())
-    if customer.height is None or customer.weight is None or not preferences:
+    if not result["preview"]:
+        preferences = list(customer.get_styles())
+    result["preferred_styles"] = [style.name for style in preferences]
+    if height is None or weight is None or not preferences:
         result.update(
             reason="incomplete_profile",
             message="Curated selection — add your height, weight and preferred styles to enable For You.",
         )
         return result
     if not (
-        140 <= float(customer.height) <= 210 and 35 <= float(customer.weight) <= 160
+        140 <= float(height) <= 210 and 35 <= float(weight) <= 160
     ):
         result.update(
             reason="unsupported_profile",
@@ -184,16 +276,16 @@ def recommend_products(customer, queryset=None):
         return result
     try:
         customer_styles = {slugify(style.name) for style in preferences}
-        rows = [
-            feature_row(
-                customer.height,
-                customer.weight,
+        rows = []
+        for product in products:
+            product_styles = [slugify(name) for name in product.style_labels]
+            rows.append(feature_row(
+                height,
+                weight,
                 customer_styles,
-                [slugify(style.name) for style in product.get_styles()],
+                product_styles,
                 slugify(product.category.name),
-            )
-            for product in products
-        ]
+            ))
         model = _load_artifact(MODEL_PATH)
         inputs = pd.DataFrame(rows, columns=FEATURE_NAMES)
         scores = model.predict(inputs)
@@ -201,14 +293,17 @@ def recommend_products(customer, queryset=None):
             raise ValueError("Unexpected prediction output.")
         for product, score in zip(products, scores):
             product.recommendation_score = int(score)
-
+            product.model_ranked = True
             product.shared_styles = [
-                style.name
-                for style in product.get_styles()
-                if slugify(style.name) in customer_styles
+                name for name in product.style_labels if slugify(name) in customer_styles
             ]
         products.sort(key=lambda p: (-p.recommendation_score, p.pk))
+        for rank, product in enumerate(products, start=1):
+            product.recommendation_rank = rank
     except Exception:
+        for product in products:
+            product.model_ranked = False
+            product.shared_styles = []
         result.update(
             reason="model_error",
             message="Curated selection — personalisation is temporarily unavailable. You can keep shopping and try again later.",
@@ -217,9 +312,11 @@ def recommend_products(customer, queryset=None):
     result.update(
         products=products,
         personalised=True,
+        model_pick_count=sum(p.recommendation_score for p in products),
+        shared_style_count=sum(bool(p.shared_styles) for p in products),
         reason="model_ranked",
-        message="Using your saved profile and "
+        message=("Previewing " if result["preview"] else "Using your saved ")
         + " / ".join(style.name for style in preferences)
-        + " preferences. Recommendations help discovery; they do not establish garment fit or a correct size.",
+        + " preferences. The trained model brings predicted relevant pieces to the front of your selection.",
     )
     return result

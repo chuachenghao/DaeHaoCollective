@@ -1,0 +1,179 @@
+{
+  "generation_mode": "Built-in image_gen tool",
+  "asset_type": "AI-generated fictional clothing catalogue product photos",
+  "format": "WebP, maximum 960 x 1200, quality 88",
+  "common_prompt": {
+    "prefix": "Use case: product-mockup. Asset type: detailed clothing catalogue product photo for independent fashion marketplace. Subject: ",
+    "suffix": ". Composition: one garment only, entire garment visible from front, centered ghost-mannequin presentation, portrait 4:5 composition, consistent generous padding all around. Scene: warm light grey seamless studio background, soft diffused light and delicate grounding shadow. Photorealistic textile detail, natural folds, crisp seams and realistic construction. No people, hangers, accessories, logos, lettering, labels, watermark, borders or collage."
+  },
+  "assets": [
+    {
+      "filename": "minimal-knit-top.webp",
+      "subject": "Cream fine-gauge short-sleeve knit top, high crew neck, straight clean hem, no decoration, subtle fine knitted texture"
+    },
+    {
+      "filename": "minimal-wide-trousers.webp",
+      "subject": "Black wide straight-leg minimalist trousers, flat waistband, concealed closure, smooth matte fabric, refined uncluttered silhouette"
+    },
+    {
+      "filename": "minimal-collarless-jacket.webp",
+      "subject": "Stone boxy minimalist collarless jacket, hidden placket, discreet seam pockets, smooth cotton fabric, crisp sculptural cut"
+    },
+    {
+      "filename": "minimal-slip-dress.webp",
+      "subject": "Black straight midi slip dress, narrow straps, square neckline, elegant matte fluid fabric, clean silhouette without ornament"
+    },
+    {
+      "filename": "casual-striped-tee.webp",
+      "subject": "Navy and Cream horizontal striped cotton crew-neck short-sleeve tee, regular relaxed fit, clearly visible soft jersey texture"
+    },
+    {
+      "filename": "casual-drawstring-shorts.webp",
+      "subject": "Stone cotton drawstring shorts, elastic waistband, visible cream drawcord, relaxed leg openings and side pockets, soft washed cotton"
+    },
+    {
+      "filename": "casual-fleece-jacket.webp",
+      "subject": "Cream zip-front fleece jacket, stand collar, soft fluffy fleece texture, discreet zip side pockets, relaxed fit"
+    },
+    {
+      "filename": "casual-jersey-dress.webp",
+      "subject": "Olive cotton jersey midi sundress, broad straps, scoop neck, relaxed gently flared skirt, visible soft jersey knit"
+    },
+    {
+      "filename": "workwear-utility-shirt.webp",
+      "subject": "Navy indigo denim long-sleeve button shirt, two large flap chest pockets, ochre contrast stitching, sturdy metal buttons, visible denim texture"
+    },
+    {
+      "filename": "workwear-cargo-trousers.webp",
+      "subject": "Olive durable cotton twill cargo trousers, large side cargo pockets with flaps, straight legs, reinforced knees, functional belt loops"
+    },
+    {
+      "filename": "workwear-chore-jacket.webp",
+      "subject": "Stone canvas chore jacket, three large rectangular patch pockets, visible dark buttons, pointed collar, sturdy contrasting topstitching"
+    },
+    {
+      "filename": "workwear-apron-dress.webp",
+      "subject": "Navy canvas midi apron dress, broad cross-back straps, square front bib, large front utility patch pockets, sturdy workwear construction"
+    },
+    {
+      "filename": "streetwear-hoodie.webp",
+      "subject": "Black heavyweight oversized pullover hoodie, dropped shoulders, large kangaroo pocket, substantial hood with black drawcord, urban streetwear silhouette"
+    },
+    {
+      "filename": "streetwear-parachute-trousers.webp",
+      "subject": "Black nylon parachute trousers, very wide legs, articulated stitched knees, large utility pockets, drawcord hems and elastic waistband, technical fabric"
+    },
+    {
+      "filename": "streetwear-varsity-jacket.webp",
+      "subject": "Navy varsity bomber jacket with Cream sleeves, navy and cream striped rib collar cuffs and hem, silver snap closure, clean blank chest without logos or lettering"
+    },
+    {
+      "filename": "streetwear-zip-dress.webp",
+      "subject": "Black oversized short-sleeve jersey midi dress, half-zip stand neck, large utility pockets, roomy streetwear silhouette, sporty substantial jersey"
+    },
+    {
+      "filename": "formal-pleated-blouse.webp",
+      "subject": "Cream long-sleeve formal blouse, fine vertical front pleats, concealed placket, graceful high round neckline, button cuffs, soft silk-like material"
+    },
+    {
+      "filename": "formal-tailored-trousers.webp",
+      "subject": "Black tailored straight-leg formal trousers, precise sharp front creases, waistband tabs, welt back pockets implied, fine wool-blend suiting fabric"
+    },
+    {
+      "filename": "formal-satin-blazer.webp",
+      "subject": "Black single-button tuxedo blazer, lustrous satin peak lapels, two welt pockets, tailored sculpted waist, refined matte suiting cloth"
+    },
+    {
+      "filename": "formal-evening-dress.webp",
+      "subject": "Navy sleeveless pleated chiffon evening midi dress, defined waistband, modest V neckline, flowing finely pleated skirt, elegant translucent chiffon layered over opaque lining"
+    },
+    {
+      "filename": "vintage-crochet-polo.webp",
+      "subject": "Cream open-knit crochet short-sleeve polo shirt, large pointed collar, three-button placket, scalloped edges, intricate retro crochet texture"
+    },
+    {
+      "filename": "vintage-corduroy-skirt.webp",
+      "subject": "Stone corduroy A-line midi skirt, centre front brown button placket, large patch pockets, pronounced vertical corduroy ridges, vintage silhouette"
+    },
+    {
+      "filename": "vintage-herringbone-jacket.webp",
+      "subject": "Olive herringbone tweed jacket, notched collar, brown elbow patches, brown buttons, welt pockets, richly detailed wool herringbone weave"
+    },
+    {
+      "filename": "vintage-floral-dress.webp",
+      "subject": "Cream midi tea dress with tiny muted Olive flowers printed all over, short puff sleeves, V-neck, covered front buttons, fitted waist and softly flared skirt, romantic vintage silhouette"
+    },
+    {
+      "filename": "linen-day-shirt.webp",
+      "subject": "Navy long-sleeve linen and cotton day shirt, pointed collar, button front, one chest pocket, airy visible linen weave and relaxed straight cut"
+    },
+    {
+      "filename": "light-layer-coat.webp",
+      "subject": "Olive light knee-length cotton coat, neat pointed collar, dark button front, discreet side pockets, light unlined fabric and clean workwear silhouette"
+    },
+    {
+      "filename": "everyday-cotton-tee.webp",
+      "subject": "Cream everyday short-sleeve cotton tee, round crew neck, clean regular fit, soft substantial jersey and subtle natural folds"
+    },
+    {
+      "filename": "utility-pocket-overshirt.webp",
+      "subject": "Olive cotton utility long-sleeve overshirt, two large flap chest pockets, sturdy front buttons, pointed collar and reinforced contrast stitching"
+    },
+    {
+      "filename": "soft-rib-knit.webp",
+      "subject": "Cream soft rib knit long-sleeve crew-neck sweater, clear fine vertical ribs, ribbed cuffs and hem, soft cotton-blend yarn"
+    },
+    {
+      "filename": "city-twill-trouser.webp",
+      "subject": "Navy city twill trousers, neat straight tapered leg, structured waistband and belt loops, clean slanted pockets, visible cotton twill texture"
+    },
+    {
+      "filename": "easy-pleat-trouser.webp",
+      "subject": "Stone relaxed pleated trousers, two front pleats, straight wide leg, belt loops and discreet side pockets, soft matte cotton-blend fabric"
+    },
+    {
+      "filename": "boxy-poplin-shirt.webp",
+      "subject": "Cream boxy cotton poplin long-sleeve shirt, crisp pointed collar, button front, wide clean silhouette and structured folded cuffs"
+    },
+    {
+      "filename": "clean-line-blazer.webp",
+      "subject": "Black clean line cotton-blend blazer, notched lapels, single button closure, two subtle welt pockets, straight minimalist formal silhouette"
+    },
+    {
+      "filename": "column-midi-dress.webp",
+      "subject": "Black column midi dress, sleeveless, broad shoulder straps, simple round neck, straight body-skimming column cut and matte fabric"
+    },
+    {
+      "filename": "relaxed-knit-cardigan.webp",
+      "subject": "Cream relaxed knit cardigan, V neck, large tonal front buttons, ribbed cuffs and hem, visible soft cotton-blend knitted texture"
+    },
+    {
+      "filename": "wide-leg-denim.webp",
+      "subject": "Navy wide-leg denim jeans, five-pocket construction, belt loops, copper button and rivets, visible ochre stitching and rich indigo cotton texture"
+    },
+    {
+      "filename": "studio-sweatshirt.webp",
+      "subject": "Stone oversized studio crew-neck sweatshirt, dropped shoulders, broad ribbed neck cuffs and hem, substantial soft cotton jersey, blank no graphics"
+    },
+    {
+      "filename": "soft-jersey-dress.webp",
+      "subject": "Olive soft jersey midi dress, short sleeves, crew neckline, relaxed straight silhouette and side slits, visible comfortable cotton-blend jersey"
+    },
+    {
+      "filename": "vintage-camp-shirt.webp",
+      "subject": "Cream vintage short-sleeve camp-collar shirt, broad open Cuban collar, brown button front and patch chest pocket, softly textured cotton fabric"
+    },
+    {
+      "filename": "pleated-day-skirt.webp",
+      "subject": "Stone pleated midi skirt, clearly defined knife pleats, simple flat waistband, vintage elegant flowing A-line silhouette, matte cotton-blend fabric"
+    },
+    {
+      "filename": "heritage-chore-coat.webp",
+      "subject": "Olive heritage cotton canvas chore coat, three patch pockets, pointed collar, warm brown front buttons, vintage washed patina and prominent stitching"
+    },
+    {
+      "filename": "evening-wrap-dress.webp",
+      "subject": "Black midi evening wrap dress, V neck, three-quarter sleeves, tie belt at waist, softly flared overlapping skirt, elegant cotton-blend fabric"
+    }
+  ]
+}

@@ -5,7 +5,14 @@
     <h1>Marketplace orders</h1>
     <form method="get" class="filter-form card">
         <label>Search <input type="search" name="q" value="{{ q }}" placeholder="Order, customer or retailer"></label>
-        <label>Order status <select name="status"><option value="">All statuses</option>{% for value, label in statuses %}<option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></label>
+        <label>Order status
+            <select name="status">
+                <option value="">All statuses</option>
+                {% for value, label in statuses %}
+                    <option value="{{ value }}" {% if selected_status == value %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </label>
         <label>Placed from <input type="date" name="start" value="{{ request.GET.start }}"></label>
         <label>Placed through <input type="date" name="end" value="{{ request.GET.end }}"></label>
         <button class="button-secondary">Search</button>

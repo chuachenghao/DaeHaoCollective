@@ -1,15 +1,55 @@
 {% load static %}
 <article class="product-card">
     <a class="product-image-link" href="{% url 'product_detail' product.pk %}" aria-label="View {{ product.name }}">
-        {% if product.image %}<img src="{{ product.image.url }}" alt="{{ product.name }} by {{ product.seller.store_name }}" loading="lazy">
-        {% else %}<img src="{% static 'marketplace/images/shirt.svg' %}" alt="Garment placeholder for {{ product.name }}" loading="lazy">{% endif %}
-        {% if not product.in_stock %}<span class="sold-out-label">Sold out</span>{% endif %}
+        {% if product.image %}
+            <img src="{{ product.image.url }}" alt="{{ product.name }} by {{ product.seller.store_name }}" loading="lazy">
+        {% else %}
+            <img src="{% static 'marketplace/images/shirt.svg' %}" alt="Garment placeholder for {{ product.name }}" loading="lazy">
+        {% endif %}
+        {% if not product.in_stock %}
+            <span class="sold-out-label">Sold out</span>
+        {% endif %}
         <span class="product-view" aria-hidden="true">Discover the piece <span>↗</span></span>
     </a>
     <div class="product-card-details">
+        {% if product.model_ranked %}
+            {% if product.recommendation_score == 1 %}
+                <p class="recommendation-label model-pick">Model pick</p>
+            {% else %}
+                <p class="recommendation-label discovery-pick">Explore another direction</p>
+            {% endif %}
+        {% endif %}
         <a class="product-brand" href="{% url 'brand_detail' product.seller.pk %}">{{ product.seller.store_name }}</a>
         <h3><a href="{% url 'product_detail' product.pk %}">{{ product.name }}</a></h3>
-        <div class="product-meta"><span>SGD {{ product.price|floatformat:2 }}</span><span class="product-sizes">{{ product.size_labels }}</span></div>
-        {% if product.shared_styles %}<p class="shared-style">Shared style: {{ product.shared_styles|join:", " }}</p>{% endif %}
+        <div class="product-meta">
+            <span>SGD {{ product.price|floatformat:2 }}</span>
+            <span class="product-sizes">{{ product.size_labels }}</span>
+        </div>
+        <div class="product-style-tags" aria-label="Collection and clothing styles">
+            <span class="product-collection-tag">{{ product.get_collection_display }}</span>
+            {% for style in product.get_styles %}
+                <span>{{ style.name }}</span>
+            {% endfor %}
+        </div>
+        {% if product.shared_styles %}
+            <p class="shared-style">Matches your {{ product.shared_styles|join:" / " }} style.</p>
+        {% elif product.model_ranked and product.recommendation_score == 1 %}
+            <p class="shared-style">Predicted relevant from your profile.</p>
+        {% endif %}
+        {% if product.size_guidance.ready %}
+            <p class="size-estimate-card">
+                <strong>{% if product.size_guidance.sample_measurements %}Example size{% else %}Estimated size{% endif %} {{ product.size_guidance.size }}</strong>
+                <span>
+                    {% if product.size_guidance.availability == 'not_sold' %}
+                        This size is not offered
+                    {% elif product.size_guidance.availability == 'sold_out' %}
+                        This size is sold out
+                    {% else %}
+                        Check colour availability
+                    {% endif %}
+                </span>
+                <a href="{% url 'product_detail' product.pk %}#size-estimate">Size and stock details →</a>
+            </p>
+        {% endif %}
     </div>
 </article>

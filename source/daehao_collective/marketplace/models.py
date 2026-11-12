@@ -80,6 +80,13 @@ class Style(models.Model):
 
 
 class Customer(models.Model):
+    GENDER_CHOICES = [
+        ("", "Prefer not to say"),
+        ("FEMALE", "Woman"),
+        ("MALE", "Man"),
+        ("NON_BINARY", "Non-binary"),
+    ]
+
     customerID = models.BigAutoField(primary_key=True)
 
     account = models.OneToOneField(
@@ -87,6 +94,9 @@ class Customer(models.Model):
         on_delete=models.CASCADE,
         related_name="customer",
         db_column="accountID",
+    )
+    gender = models.CharField(
+        max_length=20, choices=GENDER_CHOICES, default="", blank=True
     )
     height = models.DecimalField(
         max_digits=5,
@@ -178,6 +188,12 @@ class Seller(models.Model):
 
 
 class Product(models.Model):
+    COLLECTION_CHOICES = [
+        ("MEN", "Menswear"),
+        ("WOMEN", "Womenswear"),
+        ("UNISEX", "Unisex"),
+    ]
+
     productID = models.BigAutoField(primary_key=True)
 
     STATUS_CHOICES = [
@@ -199,6 +215,9 @@ class Product(models.Model):
     )
     name = models.CharField(max_length=160)
     description = models.TextField()
+    collection = models.CharField(
+        max_length=10, choices=COLLECTION_CHOICES, default="UNISEX"
+    )
     price = models.DecimalField(
         max_digits=10, decimal_places=2, validators=[MinValueValidator(Decimal("0.01"))]
     )

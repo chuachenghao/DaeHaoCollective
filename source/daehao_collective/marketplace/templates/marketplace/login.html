@@ -1,16 +1,19 @@
 {% extends 'marketplace/base.html' %}
 {% block title %}{% if staff %}Staff sign in{% else %}Sign in{% endif %} · {{ site_name }}{% endblock %}
 {% block content %}
-<section class="container page auth-page">
-  <p class="eyebrow">{% if staff %}{{ site_name }} / OPERATIONS{% else %}MY ACCOUNT{% endif %}</p>
-  <h1>{% if staff %}Staff sign in{% else %}Welcome back.{% endif %}</h1>
-  <p>{% if staff %}Sign in to the custom marketplace administration panel.{% else %}Sign in to return to your bag, preferences and orders.{% endif %}</p>
-  <form method="post" class="form card">
-    {% csrf_token %}<input type="hidden" name="next" value="{{ next }}">
-    {% include 'marketplace/includes/form_fields.html' %}
-    <button class="button" type="submit">Sign in</button>
-  </form>
-  {% if not staff %}<p>New to {{ site_name }}? <a href="{% url 'register' %}">Create an account →</a></p>
-  <p>Independent label? <a href="{% url 'seller_register' %}">Apply to sell with us →</a></p>{% endif %}
-</section>
+    <section class="container page auth-page">
+        <p class="eyebrow">{% if staff %}{{ site_name }} / OPERATIONS{% else %}MY ACCOUNT{% endif %}</p>
+        <h1>{% if staff %}Staff sign in{% else %}Welcome back.{% endif %}</h1>
+        <p>{% if staff %}Sign in to the custom marketplace administration panel.{% else %}Sign in to return to your bag, preferences and orders.{% endif %}</p>
+        <form method="post" class="form card">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{{ next }}">
+            {% include 'marketplace/includes/form_fields.html' %}
+            <button class="button" type="submit">Sign in</button>
+        </form>
+        {% if not staff %}
+            <p>New to {{ site_name }}? <a href="{% url 'register' %}">Create an account →</a></p>
+            <p>Independent label? <a href="{% url 'seller_register' %}">Apply to sell with us →</a></p>
+        {% endif %}
+    </section>
 {% endblock %}

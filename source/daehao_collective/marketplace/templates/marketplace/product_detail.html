@@ -17,8 +17,15 @@
                 {% else %}
                     <img src="{% static 'marketplace/images/shirt.svg' %}" alt="Garment placeholder for {{ product.name }}">
                 {% endif %}
-                <p class="image-caption">{% if not product.image %}Original {{ site_name }} illustration / Demo
-                collection{% else %}{{ product.seller.store_name }} / {{ product.name }}{% endif %}</p>
+                <p class="image-caption">
+                    {% if not product.image %}
+                        Original {{ site_name }} illustration / Demo collection
+                    {% elif 'products/demo/catalogue/' in product.image.name %}
+                        AI-generated catalogue image / {{ product.name }}
+                    {% else %}
+                        {{ product.seller.store_name }} / {{ product.name }}
+                    {% endif %}
+                </p>
             </div>
             <div class="product-information">
                 <a class="eyebrow text-link" href="{% url 'brand_detail' product.seller.pk %}">{{ product.seller.store_name }}
@@ -29,10 +36,38 @@
                     {{ product.description|linebreaks }}
                 </div>
                 <div class="product-tags">
+                    <span class="product-collection-tag">{{ product.get_collection_display }}</span>
                     {% for style in product.get_styles %}
                         <a href="{% url 'catalogue' %}?style={{ style.pk }}">{{ style.name }}</a>
                     {% endfor %}
                 </div>
+                <section class="size-guidance-panel" id="size-estimate" aria-labelledby="size-estimate-heading">
+                    {% if size_guidance.ready %}
+                        <p class="eyebrow">A starting point for your size</p>
+                        <h2 id="size-estimate-heading">Estimated size <span>{{ size_guidance.size }}</span></h2>
+                        <p>Based on your saved height and weight.</p>
+                        {% if size_guidance.availability == 'in_stock' %}
+                            <p class="size-availability">Size {{ size_guidance.size }} is in stock{% if size_guidance.colour %} in {{ size_guidance.colour }}{% else %} in at least one colour{% endif %}.</p>
+                        {% elif size_guidance.availability == 'sold_out' %}
+                            <p class="size-availability">Estimated size {{ size_guidance.size }} is sold out{% if size_guidance.colour %} in {{ size_guidance.colour }}{% else %} for this piece{% endif %}.</p>
+                        {% elif size_guidance.availability == 'not_sold' %}
+                            <p class="size-availability">Estimated size {{ size_guidance.size }} is not offered{% if size_guidance.colour %} in {{ size_guidance.colour }}{% else %} for this piece{% endif %}.</p>
+                        {% else %}
+                            <p class="size-availability">Check the available sizes and colours below.</p>
+                        {% endif %}
+                        <p class="help-text">Estimated from synthetic example data. Confirm the retailer’s measurements; fit is not guaranteed. Choose your size below.</p>
+                    {% else %}
+                        <h2 id="size-estimate-heading">Your size starting point</h2>
+                        <p>{{ size_guidance.message }}</p>
+                        {% if not sizing_profile_available %}
+                            {% if not request.user.is_authenticated %}
+                                <a class="text-link" href="{% url 'login' %}?next={{ request.path|urlencode }}">Sign in for a size estimate →</a>
+                            {% elif request.user.role == 'CUSTOMER' %}
+                                <a class="text-link" href="{% url 'profile' %}">Add your measurements →</a>
+                            {% endif %}
+                        {% endif %}
+                    {% endif %}
+                </section>
                 {% if variants %}
                     <form class="purchase-form" action="{% url 'cart_add' product.pk %}" method="post">
                         {% csrf_token %}
@@ -40,7 +75,10 @@
                             <legend>Colour{% if selected_colour %}: {{ selected_colour }}{% endif %}</legend>
                             <div class="choice-list">
                                 {% for colour in colours %}
-                                    <label class="choice"><input type="radio" name="colour" value="{{ colour }}" required {% if colour == selected_colour %}checked{% endif %}><span>{{ colour }}</span></label>
+                                    <label class="choice">
+                                        <input type="radio" name="colour" value="{{ colour }}" required {% if colour == selected_colour %}checked{% endif %}>
+                                        <span>{{ colour }}</span>
+                                    </label>
                                 {% endfor %}
                             </div>
                         </fieldset>
@@ -48,7 +86,10 @@
                             <legend>Size</legend>
                             <div class="choice-list">
                                 {% for size in sizes %}
-                                    <label class="choice"><input type="radio" name="size" value="{{ size }}" required {% if size == selected_size %}checked{% endif %}><span>{{ size }}</span></label>
+                                    <label class="choice">
+                                        <input type="radio" name="size" value="{{ size }}" required {% if size == selected_size %}checked{% endif %}>
+                                        <span>{{ size }}{% if size_guidance.ready and size == size_guidance.size %}<small class="suggested-size">Suggested</small>{% endif %}</span>
+                                    </label>
                                 {% endfor %}
                             </div>
                         </fieldset>
@@ -91,8 +132,7 @@
                     <summary>Size guidance & recommendations <span aria-hidden="true">+</span></summary>
                     <p>Available size labels: {{ product.size_labels|default:'Not available' }}.</p>
                     <p>See the description for any garment measurements supplied by the label. Contact the label if you need more size information.</p>
-                    <p>Personal recommendations help you discover clothing. They do not establish garment fit or
-                    determine a correct size.</p>
+                    <p>The size estimate uses your saved height and weight with synthetic example data. It is a starting point; confirm the retailer’s garment measurements before choosing your size. Fit is not guaranteed.</p>
                 </details>
                 <details class="product-accordion">
                     <summary>Delivery & demonstration purchases <span aria-hidden="true">+</span></summary>

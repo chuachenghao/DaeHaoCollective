@@ -1,13 +1,24 @@
 {% extends 'marketplace/base.html' %}
 {% block title %}Delivery addresses · {{ site_name }}{% endblock %}
 {% block content %}
-<section class="container page">
-  <p class="eyebrow">MY ACCOUNT / ADDRESSES</p><h1>Your address book</h1>
-  {% include 'marketplace/includes/account_nav.html' %}
-  <p><a href="{% url 'address_create' %}" class="button">Add an address</a></p>
-  <div class="dashboard-grid">{% for address in addresses %}<article class="card">
-    <h2>{{ address.recipient_name }}</h2><p>{{ address.address_line|linebreaksbr }}<br>Singapore {{ address.postal_code }}<br>{{ address.phone_number }}</p>
-    <a href="{% url 'address_edit' address.pk %}">Edit address</a> · <a href="{% url 'address_delete' address.pk %}">Delete address</a>
-  </article>{% empty %}<div class="card"><h2>No addresses yet</h2><p>Save a Singapore delivery address here, or add one at checkout.</p></div>{% endfor %}</div>
-</section>
+    <section class="container page">
+        <p class="eyebrow">MY ACCOUNT / ADDRESSES</p>
+        <h1>Your address book</h1>
+        {% include 'marketplace/includes/account_nav.html' %}
+        <p><a href="{% url 'address_create' %}" class="button">Add an address</a></p>
+        <div class="dashboard-grid">
+            {% for address in addresses %}
+                <article class="card">
+                    <h2>{{ address.recipient_name }}</h2>
+                    <p>{{ address.address_line|linebreaksbr }}<br>Singapore {{ address.postal_code }}<br>{{ address.phone_number }}</p>
+                    <a href="{% url 'address_edit' address.pk %}">Edit address</a> · <a href="{% url 'address_delete' address.pk %}">Delete address</a>
+                </article>
+            {% empty %}
+                <div class="card">
+                    <h2>No addresses yet</h2>
+                    <p>Save a Singapore delivery address here, or add one at checkout.</p>
+                </div>
+            {% endfor %}
+        </div>
+    </section>
 {% endblock %}

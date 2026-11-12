@@ -12,13 +12,13 @@ from .models import (
     Cart,
     Category,
     Customer,
-    CustomerStylePreference,
     Product,
-    ProductStyle,
     ProductVariant,
     SellerOrder,
     Seller,
     Style,
+    set_customer_styles,
+    set_product_styles,
 )
 
 
@@ -65,6 +65,7 @@ class SellerRegistrationForm(RegistrationForm):
 
     @transaction.atomic
     def save(self, commit=True):
+        # A seller needs a store instead of a customer profile and cart.
         account = UserCreationForm.save(self, commit=False)
         account.role = "SELLER"
         if commit:
@@ -110,9 +111,10 @@ class ProfileForm(forms.ModelForm):
 
     class Meta:
         model = Customer
-        fields = ["height", "weight", "styles"]
+        fields = ["gender", "height", "weight", "styles"]
         labels = {"height": "Height (cm)", "weight": "Weight (kg)"}
         help_texts = {
+            "gender": "Optional. You can change or clear this preference at any time.",
             "height": "Supported demo range: 140–210 cm. Optional.",
             "weight": "Supported demo range: 35–160 kg. Optional.",
         }
@@ -127,9 +129,7 @@ class ProfileForm(forms.ModelForm):
         customer = super().save(commit=False)
         if commit:
             customer.save()
-            CustomerStylePreference.objects.filter(customer=customer).delete()
-            for style in self.cleaned_data["styles"]:
-                CustomerStylePreference.objects.create(customer=customer, style=style)
+            set_customer_styles(customer, self.cleaned_data["styles"])
         return customer
 
 
@@ -151,7 +151,8 @@ class VariantSelectionForm(forms.Form):
 
 
 class QuantityForm(forms.Form):
-    quantity = forms.IntegerField(min_value=1, max_value=10000)
+    # The bag checks this quantity against the item's current stock.
+    quantity = forms.IntegerField(min_value=1)
 
 
 class StoreProfileForm(forms.ModelForm):
@@ -264,13 +265,18 @@ class ProductForm(forms.ModelForm):
             "name",
             "description",
             "category",
+            "collection",
             "price",
             "image",
             "styles",
         ]
-        labels = {"price": "Price (SGD)", "image": "Primary image"}
+        labels = {
+            "price": "Price (SGD)", "image": "Primary image",
+            "collection": "Clothing collection",
+        }
         widgets = {"description": forms.Textarea(attrs={"rows": 6})}
         help_texts = {
+            "collection": "Choose the garment's intended collection. Use Unisex for clothing intended for everyone.",
             "image": "JPEG, PNG or WebP, up to 5 MB. Leave blank to keep the current image.",
             "description": (
                 "Include the materials, care instructions and size guidance supplied by your store."
@@ -282,11 +288,8 @@ class ProductForm(forms.ModelForm):
         if self.instance.pk:
             self.initial["styles"] = self.instance.get_styles()
 
-    @transaction.atomic
     def save_styles(self, product):
-        ProductStyle.objects.filter(product=product).delete()
-        for style in self.cleaned_data["styles"]:
-            ProductStyle.objects.create(product=product, style=style)
+        set_product_styles(product, self.cleaned_data["styles"])
 
     def clean_name(self):
         return " ".join(self.cleaned_data["name"].split())
@@ -296,11 +299,8 @@ class ProductForm(forms.ModelForm):
         if image and hasattr(image, "content_type"):
             if image.size > 5 * 1024 * 1024:
                 raise ValidationError("Choose an image no larger than 5 MB.")
-            if getattr(getattr(image, "image", None), "format", "") not in [
-                "JPEG",
-                "PNG",
-                "WEBP",
-            ]:
+            # Django's ImageField has already checked and opened this upload.
+            if image.image.format not in ["JPEG", "PNG", "WEBP"]:
                 raise ValidationError("Choose a valid JPEG, PNG or WebP image.")
         return image
 

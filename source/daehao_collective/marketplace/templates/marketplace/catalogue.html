@@ -10,19 +10,174 @@
                 <a class="text-link" href="{% url 'brands' %}">All independent labels →</a>
             {% endif %}
         </header>
+        {% if is_for_you %}
+            <section class="collection-selection" aria-labelledby="collection-heading">
+                <div>
+                    <h2 id="collection-heading">Clothing selection</h2>
+                    <p class="collection-context">
+                        <strong>{{ selection.collection_label }}</strong> ·
+                        {% if selection.collection_preview %}
+                            temporary selection
+                        {% elif selection.gender == 'MALE' or selection.gender == 'FEMALE' %}
+                            from your saved gender
+                        {% else %}
+                            all collections available
+                        {% endif %}
+                    </p>
+                    {% if request.user.is_authenticated and request.user.role == 'CUSTOMER' %}
+                        <p>Saved gender: <strong>{{ selection.gender_label }}</strong></p>
+                    {% endif %}
+                </div>
+                <form method="get" action="{% url 'for_you' %}#clothing-results" class="collection-form">
+                    {% for name, value in collection_hidden_fields %}
+                        <input type="hidden" name="{{ name }}" value="{{ value }}">
+                    {% endfor %}
+                    <div>
+                        <label for="preview-collection">Show clothing</label>
+                        <select name="preview_collection" id="preview-collection">
+                            <option value="" {% if not selection.collection_preview %}selected{% endif %}>
+                                {% if request.user.is_authenticated and request.user.role == 'CUSTOMER' %}
+                                    Use my saved gender
+                                {% else %}
+                                    Default selection
+                                {% endif %}
+                            </option>
+                            {% for value, label in collection_choices %}
+                                <option value="{{ value }}" {% if selection.collection_preview and selection.collection == value %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <button type="submit" class="button button-secondary">Apply selection →</button>
+                </form>
+                <p class="collection-help">Gender sets the starting clothing collection; the style model then ranks those pieces. Size estimates use height and weight. You can explore any collection.</p>
+                {% if selection.collection_preview %}
+                    <a class="text-link" href="{{ saved_collection_url }}">
+                        {% if request.user.is_authenticated and request.user.role == 'CUSTOMER' %}
+                            Use my saved selection
+                        {% else %}
+                            Use default selection
+                        {% endif %} →
+                    </a>
+                {% endif %}
+            </section>
+            <section class="style-lab" aria-labelledby="style-lab-heading">
+                <h2 id="style-lab-heading">Your style. A different selection.</h2>
+                <p>Try a style below and watch the model reorder the clothing. These previews keep the full selection available and leave your saved preferences unchanged.</p>
+                <nav class="style-presets" aria-label="Preview a clothing style">
+                    {% for preview in style_previews %}
+                        <a class="style-preset {% if preview.slug == preview_style %}active{% endif %}" href="{{ preview.url }}" {% if preview.slug == preview_style %}aria-current="true"{% endif %}>{{ preview.name }} <span aria-hidden="true">↗</span></a>
+                    {% endfor %}
+                </nav>
+                <a class="text-link catalogue-jump" href="#clothing-results">View {{ product_count }} piece{{ product_count|pluralize }} ↓</a>
+                {% if selection.preview %}
+                    <p class="preview-note">
+                        <strong>Style preview · {{ selection.preferred_styles|join:", " }}</strong> ·
+                        {% if selection.sample_measurements %}
+                            Using an example profile of 172 cm / 65 kg.
+                        {% else %}
+                            Using your saved measurements.
+                        {% endif %}
+                        <a href="{{ saved_style_url }}">
+                            {% if request.user.is_authenticated and request.user.role == 'CUSTOMER' %}
+                                Use my saved styles
+                            {% else %}
+                                End style preview
+                            {% endif %} →
+                        </a>
+                    </p>
+                {% endif %}
+            </section>
+        {% endif %}
         {% if selection %}
             <div class="recommendation-strip {% if selection.personalised %}personalised{% endif %}">
                 <div>
-                    <strong>{% if selection.personalised %}Model-ranked selection{% else %}Curated selection{% endif %}</strong>
+                    <strong>{% if selection.personalised %}Model-ranked selection{% else %}Curated selection{% endif %}{% if selection.preferred_styles %} · {{ selection.preferred_styles|join:" / " }}{% endif %}</strong>
                     <p>{{ selection.message }}</p>
-                    {% if selection.personalised %}
-                        <small>Shared-style labels describe matching tags. Recommendations do not guarantee garment
-                        fit or a correct size.</small>
-                    {% endif %}
                 </div>
-                <a href="{% url 'profile' %}" class="text-link">{% if selection.personalised %}Edit profile{% else %}Set
-                up your profile{% endif %} →</a>
+                {% if request.user.is_authenticated and request.user.role != 'CUSTOMER' %}
+                    <a href="{% url 'catalogue' %}" class="text-link">Browse all clothing →</a>
+                {% else %}
+                    <a href="{% url 'profile' %}" class="text-link">{% if request.user.is_authenticated %}Edit my preferences{% else %}Set up my preferences{% endif %} →</a>
+                {% endif %}
             </div>
+            {% if selection.size_guidance %}
+                <section class="size-estimate-summary" aria-label="Size estimate">
+                    {% if selection.size_guidance.ready %}
+                        <div>
+                            <strong>{% if selection.size_guidance.sample_measurements %}Example size{% else %}Estimated size{% endif %} {{ selection.size_guidance.size }}</strong>
+                            <p>
+                                {% if selection.size_guidance.sample_measurements %}
+                                    For the example profile, not your measurements.
+                                {% else %}
+                                    Based on your saved height and weight.
+                                {% endif %}
+                                Check each piece for size and colour availability.
+                            </p>
+                        </div>
+                        <p class="help-text">Estimated from synthetic example data. Confirm the retailer’s measurements; fit is not guaranteed.</p>
+                    {% else %}
+                        <div>
+                            <strong>Size guidance</strong>
+                            <p>{{ selection.size_guidance.message }}</p>
+                        </div>
+                        {% if selection.size_guidance.reason == 'missing_measurements' %}
+                            {% if not request.user.is_authenticated %}
+                                <a class="text-link" href="{% url 'login' %}?next={% url 'profile' %}">Sign in to add measurements →</a>
+                            {% elif request.user.role == 'CUSTOMER' %}
+                                <a class="text-link" href="{% url 'profile' %}">Add your measurements →</a>
+                            {% endif %}
+                        {% endif %}
+                    {% endif %}
+                </section>
+            {% endif %}
+            {% if selection.personalised %}
+                <div class="recommendation-stats" aria-label="Recommendation results">
+                    <div class="recommendation-stat">
+                        <strong>{{ selection.model_pick_count }}</strong>
+                        <span>model picks</span>
+                    </div>
+                    <div class="recommendation-stat">
+                        <strong>{{ selection.shared_style_count }}</strong>
+                        <span>share your selected style{% if selection.preferred_styles|length != 1 %}s{% endif %}</span>
+                    </div>
+                    <div class="recommendation-stat">
+                        <strong>{{ selection.evaluated_count }}</strong>
+                        <span>available pieces evaluated{% if has_filters %} within your filters{% endif %}</span>
+                    </div>
+                </div>
+                <div class="recommendation-actions">
+                    <p>{% if sort == 'recommended' %}Model picks appear first. Other styles stay available for discovery.{% else %}Sorted by your choice. Select “Recommended” to bring model picks back to the front.{% endif %}</p>
+                    <a class="text-link" href="{{ catalogue_comparison_url }}">Compare with all clothing →</a>
+                </div>
+                <details class="model-explainer">
+                    <summary>See how the recommendations change the order</summary>
+                    <div class="ranking-comparison">
+                        <div>
+                            <h3>Available clothing · by name</h3>
+                            <ol>
+                                {% for product in comparison_products %}
+                                    <li><a href="{% url 'product_detail' product.pk %}">{{ product.name }}</a></li>
+                                {% endfor %}
+                            </ol>
+                        </div>
+                        <div>
+                            <h3>For You · model order</h3>
+                            <ol>
+                                {% for product in ranked_examples %}
+                                    <li>
+                                        <a href="{% url 'product_detail' product.pk %}">{{ product.name }}</a>
+                                        {% if product.recommendation_score == 1 %}
+                                            <span class="recommendation-label model-pick">Model pick</span>
+                                        {% endif %}
+                                    </li>
+                                {% endfor %}
+                            </ol>
+                        </div>
+                    </div>
+                    <p>The decision tree evaluates your selected styles, measurements, and each piece’s style tags and category. It predicts relevance as one of two classes, then puts predicted relevant pieces first. Matching style tags are shown separately; they are an explanation of shared attributes, rather than a confidence percentage.</p>
+                    <p>Style rankings and size estimates use synthetic example data. Confirm the retailer’s measurements; neither recommendation guarantees physical fit.</p>
+                </details>
+            {% endif %}
         {% endif %}
         {% if filter_errors %}
             <div class="error-summary" role="alert">
@@ -32,7 +187,14 @@
                 {% endfor %}
             </div>
         {% endif %}
+        <a class="text-link catalogue-jump" href="#clothing-results">Skip filters to clothing ↓</a>
         <form method="get" class="catalogue-layout">
+            {% if preview_style %}
+                <input type="hidden" name="preview_style" value="{{ preview_style }}">
+            {% endif %}
+            {% if preview_collection %}
+                <input type="hidden" name="preview_collection" value="{{ preview_collection }}">
+            {% endif %}
             <div class="catalogue-toolbar">
                 <div class="catalogue-search">
                     <label for="catalogue-search">Search products and labels</label>
@@ -59,23 +221,42 @@
                 <details class="filters" open>
                     <summary>Filters <span aria-hidden="true">+</span></summary>
                     <div class="filter-content">
+                        {% if not is_for_you %}
+                            <fieldset>
+                                <legend>Clothing collection</legend>
+                                <select name="collection" id="catalogue-collection" aria-label="Clothing collection">
+                                    {% for value, label in collection_choices %}
+                                        <option value="{{ value }}" {% if selected_collection == value %}selected{% endif %}>{{ label }}</option>
+                                    {% endfor %}
+                                </select>
+                            </fieldset>
+                        {% endif %}
                         <fieldset>
                             <legend>Category</legend>
                             {% for category in categories %}
-                                <label class="checkbox-label"><input type="checkbox" name="category" value="{{ category.pk }}" {% if category.pk|stringformat:'s' in selected.category %}checked{% endif %}>{{ category.name }}</label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" name="category" value="{{ category.pk }}" {% if category.pk|stringformat:'s' in selected.category %}checked{% endif %}>
+                                    {{ category.name }}
+                                </label>
                             {% endfor %}
                         </fieldset>
                         <fieldset>
                             <legend>Style</legend>
                             {% for style in styles %}
-                                <label class="checkbox-label"><input type="checkbox" name="style" value="{{ style.pk }}" {% if style.pk|stringformat:'s' in selected.style %}checked{% endif %}>{{ style.name }}</label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" name="style" value="{{ style.pk }}" {% if style.pk|stringformat:'s' in selected.style %}checked{% endif %}>
+                                    {{ style.name }}
+                                </label>
                             {% endfor %}
                         </fieldset>
                         {% if not brand %}
                             <fieldset>
                                 <legend>Independent label</legend>
                                 {% for seller in sellers %}
-                                    <label class="checkbox-label"><input type="checkbox" name="seller" value="{{ seller.pk }}" {% if seller.pk|stringformat:'s' in selected.seller %}checked{% endif %}>{{ seller.store_name }}</label>
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" name="seller" value="{{ seller.pk }}" {% if seller.pk|stringformat:'s' in selected.seller %}checked{% endif %}>
+                                        {{ seller.store_name }}
+                                    </label>
                                 {% endfor %}
                             </fieldset>
                         {% endif %}
@@ -97,37 +278,56 @@
                             <legend>Size</legend>
                             <div class="size-filters">
                                 {% for size in sizes %}
-                                    <label class="checkbox-label"><input type="checkbox" name="size" value="{{ size }}" {% if size in selected.size %}checked{% endif %}>{{ size }}</label>
+                                    <label class="checkbox-label">
+                                        <input type="checkbox" name="size" value="{{ size }}" {% if size in selected.size %}checked{% endif %}>
+                                        {{ size }}
+                                    </label>
                                 {% endfor %}
                             </div>
                         </fieldset>
                         <fieldset>
                             <legend>Colour</legend>
                             {% for colour in colours %}
-                                <label class="checkbox-label"><input type="checkbox" name="colour" value="{{ colour }}" {% if colour in selected.colour %}checked{% endif %}>{{ colour }}</label>
+                                <label class="checkbox-label">
+                                    <input type="checkbox" name="colour" value="{{ colour }}" {% if colour in selected.colour %}checked{% endif %}>
+                                    {{ colour }}
+                                </label>
                             {% endfor %}
                         </fieldset>
                         <fieldset>
                             <legend>Availability</legend>
-                            <label class="checkbox-label"><input type="checkbox" name="stock" value="1" {% if stock_only %}checked{% endif %}>In
-                            stock only</label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="stock" value="1" {% if stock_only %}checked{% endif %}>
+                                In
+                            stock only
+                            </label>
                         </fieldset>
                         <button class="button filter-apply" type="submit">Apply filters <span aria-hidden="true">→</span></button>
-                        <a class="clear-filters" href="{{ request.path }}">Clear all</a>
+                        <a class="clear-filters" href="{{ clear_filters_url }}">Clear all</a>
                     </div>
                 </details>
             </aside>
-            <div class="catalogue-results">
+            <div class="catalogue-results" id="clothing-results">
+                {% if is_for_you %}
+                    <p class="catalogue-jump">{{ selection.collection_label }} · {% if selection.preview %}{{ selection.preferred_styles|join:" / " }} preview{% elif selection.personalised %}Your {{ selection.preferred_styles|join:" / " }} preferences{% else %}Curated selection{% endif %} · <a class="text-link" href="#collection-heading">Change collection ↑</a> · <a class="text-link" href="#style-lab-heading">Change style ↑</a></p>
+                {% endif %}
                 <div class="results-meta">
                     <span>{{ product_count }} product{{ product_count|pluralize }}{% if query %} for “{{ query }}”{% endif %}</span>
                     {% if has_filters %}
-                        <a href="{{ request.path }}">Clear selected filters ×</a>
+                        <a href="{{ clear_filters_url }}">Clear selected filters ×</a>
                     {% else %}
                         <span>Thoughtfully selected. Independently made.</span>
                     {% endif %}
                 </div>
                 {% if has_filters %}
                     <div class="applied-filters" aria-label="Selected filters">
+                        {% if selected_collection != 'ALL' %}
+                            {% for value, label in collection_choices %}
+                                {% if selected_collection == value %}
+                                    <span>{{ label }}</span>
+                                {% endif %}
+                            {% endfor %}
+                        {% endif %}
                         {% for category in categories %}
                             {% if category.pk|stringformat:'s' in selected.category %}
                                 <span>{{ category.name }}</span>
@@ -168,7 +368,7 @@
                             <span class="eyebrow">Room to explore</span>
                             <h2>No clothing matches these filters.</h2>
                             <p>Try a broader search, a different style, or clear your selected filters.</p>
-                            <a class="button button-secondary" href="{{ request.path }}">Clear filters →</a>
+                            <a class="button button-secondary" href="{{ clear_filters_url }}">Clear filters →</a>
                         </div>
                     {% endfor %}
                 </div>
