@@ -17,6 +17,19 @@
             <span class="image-caption">A study in everyday essentials / {{ site_name }}</span>
         </div>
     </section>
+    <section class="container home-style-discovery">
+        <div class="section-heading">
+            <div><p class="eyebrow">Style discovery, made personal</p><h2>See what changes with your style.</h2></div>
+            <a class="text-link" href="{% url 'for_you' %}">Explore For You →</a>
+        </div>
+        <p>From clean Minimal shapes to expressive Streetwear, try a preference and see the trained recommendation model bring different clothing forward.</p>
+        <nav class="style-presets" aria-label="Try style recommendations">
+            <a class="style-preset" href="{% url 'for_you' %}?preview_style=minimal#clothing-results">Minimal ↗</a>
+            <a class="style-preset" href="{% url 'for_you' %}?preview_style=streetwear#clothing-results">Streetwear ↗</a>
+            <a class="style-preset" href="{% url 'for_you' %}?preview_style=formal#clothing-results">Formal ↗</a>
+            <a class="style-preset" href="{% url 'for_you' %}?preview_style=vintage#clothing-results">Vintage ↗</a>
+        </nav>
+    </section>
     <section class="container home-selection">
         <div class="section-heading">
             <div>

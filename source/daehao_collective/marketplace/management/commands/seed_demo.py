@@ -4,6 +4,9 @@ from django.conf import settings
 from django.core.files import File
 from django.core.management.base import BaseCommand
 from django.db import transaction
+from django.utils.text import slugify
+
+from marketplace.demo_catalogue import ADDITIONAL_PRODUCTS, detailed_description
 
 from marketplace.models import (
     Account,
@@ -214,6 +217,11 @@ PRODUCT_DATA = [
         ["Black", "Cream"],
     ),
 ]
+PRODUCT_DATA += [
+    (item[0], item[1], item[2], item[3], [item[4]], item[5], item[6], item[7])
+    for item in ADDITIONAL_PRODUCTS
+]
+PRODUCT_DETAILS = {item[6]: item for item in ADDITIONAL_PRODUCTS}
 COLOUR_CODES = {
     "Navy": "NV",
     "Cream": "CR",
@@ -233,27 +241,45 @@ def demo_account(username, email, role):
     return create_account(username, email, DEMO_PASSWORD, role)
 
 
-def save_demo_image(product, illustration):
-    filename = illustration + ".svg"
-    source = (
+def save_demo_image(product, illustration, photo_slug=None):
+    """Upgrade seed illustrations when photographs exist, preserving user uploads."""
+    legacy_images = {
+        "products/demo/" + name + ".svg"
+        for name in ["shirt", "knit", "coat", "trousers", "dress"]
+    }
+    image_root = (
         settings.BASE_DIR
         / "marketplace"
         / "static"
         / "marketplace"
         / "images"
-        / filename
     )
-    image_name = "products/demo/" + filename
+    photo_filename = (photo_slug or slugify(product.name)) + ".webp"
+    photo_source = image_root / "catalogue" / photo_filename
+    if photo_source.is_file():
+        source = photo_source
+        image_name = "products/demo/catalogue/" + photo_filename
+    else:
+        source = image_root / (illustration + ".svg")
+        image_name = "products/demo/" + illustration + ".svg"
+
+    current_image = product.image.name
+    if current_image and current_image not in legacy_images and current_image != image_name:
+        # A seller's own upload remains intact, even if the file is unavailable.
+        return False
     storage = product.image.storage
+    if current_image == image_name and storage.exists(image_name):
+        return False
     if not storage.exists(image_name):
         with source.open("rb") as image:
             image_name = storage.save(image_name, File(image))
     product.image.name = image_name
     product.save(update_fields=["image"])
+    return True
 
 
 class Command(BaseCommand):
-    help = "Add fictional DaeHao Collective accounts, 18 public products, one pending listing and a SGD 220 demo bag."
+    help = "Add fictional accounts, 42 public products across six styles, one pending listing and a SGD 220 demo bag."
 
     @transaction.atomic
     def handle(self, *args, **options):
@@ -343,6 +369,7 @@ class Command(BaseCommand):
             )
 
         created_products = 0
+        updated_images = 0
         products = {}
         for (
             seller_key,
@@ -354,10 +381,13 @@ class Command(BaseCommand):
             sku_prefix,
             colours,
         ) in PRODUCT_DATA:
+            details = PRODUCT_DETAILS.get(sku_prefix)
+            photo_slug = details[8] if details else slugify(name)
             stable_sku = f"{sku_prefix}-{COLOUR_CODES[colours[0]]}-S"
             existing = Product.objects.filter(variants__sku=stable_sku).first()
             if existing is not None:
                 products[name] = existing
+                updated_images += save_demo_image(existing, illustration, photo_slug)
                 continue
             product, is_new = Product.objects.get_or_create(
                 seller=sellers[seller_key],
@@ -365,7 +395,9 @@ class Command(BaseCommand):
                 defaults={
                     "category": categories[category],
                     "price": Decimal(price),
-                    "description": (
+                    "description": detailed_description(
+                        details, sellers[seller_key].store_name
+                    ) if details else (
                         f"{name} from {sellers[seller_key].store_name}. A considered piece for everyday dressing, with an easy silhouette and thoughtful finishing.\n\n"
                         + (
                             "Linen and cotton blend."
@@ -382,9 +414,10 @@ class Command(BaseCommand):
             )
             products[name] = product
             if not is_new:
+                updated_images += save_demo_image(product, illustration, photo_slug)
                 continue
             created_products += 1
-            save_demo_image(product, illustration)
+            updated_images += save_demo_image(product, illustration, photo_slug)
             for tag in tags:
                 ProductStyle.objects.get_or_create(product=product, style=styles[tag])
             for colour in colours:
@@ -451,7 +484,7 @@ class Command(BaseCommand):
                 CartItem.objects.create(cart=cart, variant=trouser, quantity=1)
         self.stdout.write(
             self.style.SUCCESS(
-                f"Demo ready: added {created_products} public products. Existing records were preserved."
+                f"Demo ready: added {created_products} public products; updated {updated_images} seed images. Existing edits and bags were preserved."
             )
         )
         self.stdout.write(

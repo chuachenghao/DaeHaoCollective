@@ -7,9 +7,13 @@
         <span class="product-view" aria-hidden="true">Discover the piece <span>↗</span></span>
     </a>
     <div class="product-card-details">
+        {% if product.model_ranked %}
+            <p class="recommendation-label {% if product.recommendation_score == 1 %}model-pick{% else %}discovery-pick{% endif %}">{% if product.recommendation_score == 1 %}Model pick{% else %}Explore another direction{% endif %}</p>
+        {% endif %}
         <a class="product-brand" href="{% url 'brand_detail' product.seller.pk %}">{{ product.seller.store_name }}</a>
         <h3><a href="{% url 'product_detail' product.pk %}">{{ product.name }}</a></h3>
         <div class="product-meta"><span>SGD {{ product.price|floatformat:2 }}</span><span class="product-sizes">{{ product.size_labels }}</span></div>
-        {% if product.shared_styles %}<p class="shared-style">Shared style: {{ product.shared_styles|join:", " }}</p>{% endif %}
+        <div class="product-style-tags" aria-label="Clothing styles">{% for style in product.get_styles %}<span>{{ style.name }}</span>{% endfor %}</div>
+        {% if product.shared_styles %}<p class="shared-style">Matches your {{ product.shared_styles|join:" / " }} style.</p>{% elif product.model_ranked and product.recommendation_score == 1 %}<p class="shared-style">Predicted relevant from your profile.</p>{% endif %}
     </div>
 </article>

@@ -621,7 +621,7 @@ def public_sellers():
     return Seller.objects.filter(approval_status="APPROVED")
 
 
-def _recommendations(request, queryset=None):
+def _recommendations(request, queryset=None, preview_style=None):
     from .recommendations import recommend_products
 
     customer = (
@@ -629,7 +629,7 @@ def _recommendations(request, queryset=None):
         if request.user.is_authenticated
         else None
     )
-    return recommend_products(customer, queryset=queryset)
+    return recommend_products(customer, queryset=queryset, preview_style=preview_style)
 
 
 def home(request):
@@ -645,7 +645,7 @@ def home(request):
     )
 
 
-def filter_catalogue(request, queryset):
+def filter_catalogue(request, queryset, available_only=False):
     query = request.GET.get("q", "").strip()
     selected = {}
     errors = []
@@ -692,13 +692,18 @@ def filter_catalogue(request, queryset):
     if errors:
         queryset = queryset.none()
 
-    if selected["size"] or selected["colour"] or request.GET.get("stock") == "1":
+    if (
+        selected["size"]
+        or selected["colour"]
+        or request.GET.get("stock") == "1"
+        or available_only
+    ):
         variants = ProductVariant.objects.all()
         if selected["size"]:
             variants = variants.filter(size__in=selected["size"])
         if selected["colour"]:
             variants = variants.filter(colour__in=selected["colour"])
-        if request.GET.get("stock") == "1":
+        if request.GET.get("stock") == "1" or available_only:
             variants = variants.filter(stock_quantity__gt=0)
         queryset = queryset.filter(pk__in=variants.values("product_id"))
 
@@ -714,16 +719,33 @@ def filter_catalogue(request, queryset):
 
 
 def catalogue_context(request, queryset, personalised=False):
-    queryset, context = filter_catalogue(request, queryset)
-    sort = request.GET.get("sort", "recommended" if personalised else "name")
+    queryset, context = filter_catalogue(request, queryset, available_only=personalised)
+    sort = request.GET.get("sort", "")
     ordering = {
         "name": ("name", "pk"),
         "price_asc": ("price", "name", "pk"),
         "price_desc": ("-price", "name", "pk"),
     }
     selection = None
+    preview_style = ""
     if personalised:
-        selection = _recommendations(request, queryset)
+        from .recommendations import STYLE_SLUGS
+
+        preview_style = request.GET.get("preview_style", "")
+        if preview_style and (
+            preview_style not in STYLE_SLUGS
+            or len(request.GET.getlist("preview_style")) != 1
+        ):
+            context["filter_errors"].append(
+                "Choose a single available style from the preview buttons."
+            )
+            preview_style = ""
+    if personalised:
+        selection = _recommendations(request, queryset, preview_style or None)
+        if sort not in ordering and not (
+            sort == "recommended" and selection["personalised"]
+        ):
+            sort = "recommended" if selection["personalised"] else "name"
         if sort == "recommended":
             products = selection["products"]
         else:
@@ -733,11 +755,36 @@ def catalogue_context(request, queryset, personalised=False):
             if sort in ["price_asc", "price_desc"]:
                 products.sort(key=lambda p: p.price, reverse=sort == "price_desc")
     else:
+        if sort not in ordering:
+            sort = "name"
         products = queryset.order_by(*ordering.get(sort, ordering["name"]))
 
     page = Paginator(products, 12).get_page(request.GET.get("page"))
     query_params = request.GET.copy()
     query_params.pop("page", None)
+    if personalised and not preview_style:
+        query_params.pop("preview_style", None)
+    clear_filters_url = request.path
+    if preview_style:
+        clear_filters_url += "?" + urlencode({"preview_style": preview_style})
+    comparison_params = query_params.copy()
+    comparison_params.pop("preview_style", None)
+    comparison_params["sort"] = "name"
+    comparison_params["stock"] = "1"
+    catalogue_comparison_url = reverse("catalogue") + "?" + comparison_params.urlencode()
+    style_previews = []
+    if personalised:
+        for slug in STYLE_SLUGS:
+            preview_params = query_params.copy()
+            preview_params["preview_style"] = slug
+            preview_params["sort"] = "recommended"
+            style_previews.append(
+                {
+                    "slug": slug,
+                    "name": slug.title(),
+                    "url": request.path + "?" + preview_params.urlencode() + "#clothing-results",
+                }
+            )
     active_variants = ProductVariant.objects.filter(product__in=public_products())
     context.update(
         {
@@ -745,6 +792,7 @@ def catalogue_context(request, queryset, personalised=False):
             "products": page.object_list,
             "product_count": page.paginator.count,
             "query_params": query_params.urlencode(),
+            "pagination_anchor": "#clothing-results",
             "sort": sort,
             "selection": selection,
             "categories": Category.objects.all(),
@@ -772,6 +820,22 @@ def catalogue_context(request, queryset, personalised=False):
             ),
             "active_nav": "for_you" if personalised else "shop",
             "is_for_you": personalised,
+            "preview_style": preview_style,
+            "style_previews": style_previews,
+            "clear_filters_url": clear_filters_url,
+            "catalogue_comparison_url": catalogue_comparison_url,
+            "comparison_products": (
+                sorted(selection["products"], key=lambda p: (p.name.lower(), p.pk))[
+                    :3
+                ]
+                if selection and selection["personalised"]
+                else []
+            ),
+            "ranked_examples": (
+                selection["products"][:3]
+                if selection and selection["personalised"]
+                else []
+            ),
         }
     )
     return context
@@ -792,8 +856,8 @@ def for_you(request):
         {
             "page_title": (
                 "Selected for your preferences"
-                if selection["personalised"]
-                else "A little inspiration"
+                if selection["personalised"] and not selection["preview"]
+                else "Find your style"
             ),
             "eyebrow": "Personal discovery",
             "active_nav": "for_you",
