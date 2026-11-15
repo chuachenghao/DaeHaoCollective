@@ -1,9 +1,8 @@
 DaeHao Collective — IS2108 Pair Project
 
-Group number: [your group number]
-Group leader: [full name, student number, email, contact number]
-Second member: [full name, student number, email, contact number]
-Full demo video: [YouTube link]
+Group: Pair Project 11
+Members: Chua Cheng Hao, Ong Seng Ming Daemon
+Demo video: https://youtu.be/jWTYg-gnBSM
 
 RUN THE PROJECT (Python 3.12 recommended)
 Open a terminal in the folder containing this readme.txt, then run:
